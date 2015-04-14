@@ -126,6 +126,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # nginx
     app.vm.network "forwarded_port", guest: 80, host: Integer(ENV.fetch("ASHLAR_WEB_PORT_80", 7000))
 
+    # app debug
+    app.vm.network "forwarded_port", guest: 4000, host: 3000
+
     app.vm.provision "ansible" do |ansible|
       ansible.playbook = "deployment/ansible/app.yml"
       ansible.groups = ANSIBLE_GROUPS.merge(ANSIBLE_ENV_GROUPS)
