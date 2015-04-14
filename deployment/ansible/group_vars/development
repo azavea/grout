@@ -16,3 +16,8 @@ postgresql_password: ashlar
 postgresql_database: ashlar
 postgresql_hba_mapping:
   - { type: "host", database: "all", user: "all", address: "192.168.11.1/24", method: "md5" }
+
+## APP SETTINGS
+db_uri: "'sqlite:///' + os.path.join(BASE_DIR, 'ashlar.db')"
+csrf_session_key: "seekrit"
+cookie_secret_key: "seekrit"

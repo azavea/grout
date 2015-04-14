@@ -1,7 +1,6 @@
-root_conf_dir: '/etc/ashlar.d'
+root_conf_dir: "/etc/ashlar.d"
 flask_workers: 1
-app_log: '/var/log/ashlar.log'
-app_username: ''
-root_app_dir: '/opt/app/'
+app_log: "/var/log/ashlar.log"
+root_app_dir: "/opt/app/"
 ashlar_session_timeout_s: 40
-root_static_dir: '/opt/app/ashlar/static' # TODO: copy assets 'n stuff
+root_static_dir: "/opt/app/ashlar/static" # TODO: copy assets

@@ -41,6 +41,10 @@
   template: src=upstart-ashlar.conf.j2 dest=/etc/init/ashlar.conf
   notify: Restart ashlar
 
+- name: Copy app configuration
+  template: src=app-config.py.j2 dest={{ root_app_dir }}/config.py
+  notify: Restart ashlar
+
 - name: Copy nginx config
   template: src=nginx-default.j2 dest=/etc/nginx/sites-available/default
   notify: Restart nginx
