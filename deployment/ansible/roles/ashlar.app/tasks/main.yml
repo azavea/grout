@@ -1,11 +1,8 @@
 ---
 
-- name: Create app directory
-  file: path={{ ashlar_app_dir }}
-        owner={{ ashlar_user }}
-        group={{ ashlar_user }}
-        mode=0775
-        state=directory
+- name: Add root_py_dir to pythonpath
+  lineinfile: dest=/etc/environment
+              line="PYTHONPATH={{ root_py_dir }}:$PYTHONPATH"
 
 - name: Install python requirements
   pip: name={{ item.name }} version={{ item.version }}
@@ -14,8 +11,11 @@
     # 4/14/2015 - From the SQLAlchemy 1.0.0b5 changelog:
     # "At this point, 1.0.0 is ready to go and should be released very soon."
     - { name: 'SQLAlchemy', version: '0.9.9' }
+    - { name: 'GeoAlchemy2', version: '0.2.4' }
     - { name: 'Flask', version: '0.10.1' }
     - { name: 'Flask-SQLAlchemy', version: '2.0' }
+    - { name: 'alembic', version: '0.7.4' }
+    - { name: 'jsonschema', version: '2.4.0' }
   notify: Restart ashlar
 
 - name: Install python dev requirements
@@ -25,6 +25,15 @@
     - { name: 'ipdb', version: '0.8' }
   when: developing
   notify: Restart ashlar
+
+- name: Install Alembic config
+  template: src=alembic.ini.j2 dest={{ root_py_dir }}/alembic.ini
+
+- name: Run migrations
+  command: alembic upgrade head
+  sudo: False
+  args:
+    chdir: "{{ root_py_dir }}"
 
 - name: Touch log file if it does not exist
   command: touch {{ app_log }}
