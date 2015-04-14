@@ -85,16 +85,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.cache.synced_folder_opts = {
       type: :nfs
     }
-
-    if ENV.fetch("ASHLAR_NFS_VERSION_3", false)
-      config.cache.synced_folder_opts = config.cache.synced_folder_opts.merge({
-        # The nolock option can be useful for an NFSv3 client that wants to avoid the
-        # NLM sideband protocol. Without this option, apt-get might hang if it tries
-        # to lock files needed for /var/cache/* operations. All of this can be avoided
-        # by using NFSv4 everywhere. Please note that the tcp option is not the default.
-        mount_options: ['rw', 'vers=3', 'tcp', 'nolock']
-      })
-    end
   end
 
   config.vm.define "database" do |database|
@@ -124,11 +114,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     if testing?
         app.vm.synced_folder "./app", "/opt/app"
     else
-        app.vm.synced_folder "./app", "/opt/app", :nfs => true, :mount_options => [
-            ("nfsvers=3" if ENV.fetch("ASHLAR_NFS_VERSION_3", false)),
-            "noatime",
-            "actimeo=1",
-        ]
+        app.vm.synced_folder "./app", "/opt/app", :nfs => true
+        # Mount options causing some users trouble, disable until necessary (e.g. a grunt/gulp install)
+        #app.vm.synced_folder "./app", "/opt/app", :nfs => true, :mount_options => [
+            #("nfsvers=3" if ENV.fetch("ASHLAR_NFS_VERSION_3", false)),
+            #"noatime",
+            #"actimeo=1",
+        #]
     end
 
     # nginx
