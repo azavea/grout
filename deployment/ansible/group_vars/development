@@ -1,0 +1,18 @@
+ashlar_app_dir: "/opt/app"
+
+## GUNICORN SETTINGS
+gunicorn_start_on: "vagrant-mounted"
+gunicorn_bind: "0.0.0.0:8080"
+gunicorn_reload: true
+gunicorn_workers: 4
+gunicorn_loglevel: "debug"
+gunicorn_app_dir: "{{ ashlar_app_dir }}"
+gunicorn_wsgi: "ashlar.wsgi"
+
+## POSTGRESQL SETTINGS
+postgresql_listen_addresses: "*"
+postgresql_username: ashlar
+postgresql_password: ashlar
+postgresql_database: ashlar
+postgresql_hba_mapping:
+  - { type: "host", database: "all", user: "all", address: "192.168.11.1/24", method: "md5" }

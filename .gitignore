@@ -1,3 +1,18 @@
+# Vagrant dir
+.vagrant
+
+*~
+*.doctree
+*.swp
+*.swo
+*.pyc
+*.suo
+*.user
+*.sql3
+
+# Ansible roles
+deployment/ansible/roles/azavea.*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
