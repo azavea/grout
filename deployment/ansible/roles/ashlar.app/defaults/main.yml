@@ -2,6 +2,11 @@ ashlar_user: "{{ ansible_ssh_user }}"
 root_conf_dir: "/etc/ashlar.d"
 flask_workers: 1
 app_log: "/var/log/ashlar.log"
-root_app_dir: "/opt/app/"
+root_app_dir: "/opt/app"
 ashlar_session_timeout_s: 40
-root_static_dir: "/opt/app/ashlar/static" # TODO: copy assets
+root_py_dir: "{{ root_app_dir }}/ashlar"
+root_static_dir: "{{ root_py_dir }}/static" # TODO: copy assets
+
+database_driver: "postgresql"
+database_host: "database.service.ashlar.internal"
+database_uri: "{{ database_driver }}://{{ postgresql_username }}:{{ postgresql_password }}@{{ database_host }}/{{ postgresql_database }}"

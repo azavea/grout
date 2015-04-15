@@ -92,6 +92,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     database.hostmanager.aliases = %w(database.service.ashlar.internal)
     database.vm.network "private_network", ip: "192.168.11.101"
 
+    database.vm.synced_folder ".", "/vagrant", disabled: true
+
     database.vm.provision "ansible" do |ansible|
       ansible.playbook = "deployment/ansible/database.yml"
       ansible.groups = ANSIBLE_GROUPS.merge(ANSIBLE_ENV_GROUPS)
@@ -110,6 +112,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     app.vm.hostname = "app"
     app.hostmanager.aliases = %w(app.service.ashlar.internal)
     app.vm.network "private_network", ip: "192.168.11.102"
+
+    app.vm.synced_folder ".", "/vagrant", disabled: true
 
     if testing?
         app.vm.synced_folder "./app", "/opt/app"

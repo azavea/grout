@@ -10,6 +10,9 @@
 *.user
 *.sql3
 
+# Alembic
+alembic.ini
+
 # Ansible roles
 deployment/ansible/roles/azavea.*
 
