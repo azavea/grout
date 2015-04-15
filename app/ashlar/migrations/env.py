@@ -15,7 +15,6 @@ fileConfig(config.config_file_name)
 # for 'autogenerate' support
 from ashlar import models
 target_metadata = models.BaseModel.metadata
-# target_metadata = None
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
