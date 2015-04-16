@@ -4,13 +4,15 @@ from sqlalchemy.types import Integer, String, Float, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import func, UniqueConstraint
 from sqlalchemy.schema import Index
+from sqlalchemy.orm import validates
 
 import jsonschema
 
 from geoalchemy2.types import Geometry
 
+from ashlar import db
 
-BaseModel = declarative_base()
+BaseModel = db.Model
 
 
 class AshlarModel(BaseModel):
@@ -26,6 +28,26 @@ class SchemaModel(AshlarModel):
 
     version = Column(Integer, nullable=False)
     schema = Column(JSONB)
+
+    def validate_json(self, json_dict):
+        """Validates a JSON-like dictionary against this object's schema
+
+        :param json_dict: Python dict representing json to be validated against self.schema
+        :return: None if validation succeeds; jsonschema.exceptions.ValidationError if failure
+                 (or jsonschema.exceptions.SchemaError if the schema is invalid)
+        """
+        return jsonschema.validate(json_dict, self.schema)
+
+    @validates('schema')
+    def validate_schema(self, key, schema):
+        """Validates that this object's schema is a valid JSON-Schema schema
+        :param key: Name of the field being validated
+        :param schema: Python dict representing json schema that should be checked
+        :return: None if schema validates; raises jsonschema.exceptions.SchemaError
+            if schema is invalid
+        """
+        jsonschema.Draft4Validator.check_schema(schema)
+        return schema
 
 
 class Record(AshlarModel):

@@ -15,7 +15,7 @@ app.config.from_object('config')
 # Define the database object which is imported
 # by modules and controllers
 # TODO: set up database
-# db = SQLAlchemy(app)
+db = SQLAlchemy(app)
 
 # Sample HTTP error handling
 @app.errorhandler(404)
