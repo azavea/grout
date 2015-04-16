@@ -15,12 +15,12 @@ db = SQLAlchemy(app)
 
 # Any module inits that require app and db
 # must be imported after app is defined above
-from api import api_blueprint as api_module
+from api import item_schema_bp, record_schema_bp
 from api import status
 
 app.register_blueprint(hello_module)
-app.register_blueprint(api_module)
-
+app.register_blueprint(item_schema_bp)
+app.register_blueprint(record_schema_bp)
 
 # Sample HTTP error handling
 @app.errorhandler(status.HTTP_404_NOTFOUND)

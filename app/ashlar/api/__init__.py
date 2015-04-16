@@ -1,22 +1,20 @@
 from __future__ import absolute_import
 
 from flask import Blueprint
+from flask.ext.restless import APIManager
 from flask_restful import Api
 
-from ashlar import app
-from api.resources import (RecordSchemaView,
-                           RecordSchemaListView,
-                           ItemSchemaView,
-                           ItemSchemaListView)
+from ashlar import app, db
+from ashlar.ashlar.models import RecordSchema, ItemSchema
 
 
 API_CONFIG = app.config['ASHLAR_API']
 
-api_blueprint = Blueprint('api', __name__)
-api = Api(api_blueprint)
+api_manager = APIManager(app, session=db.session)
 
-api.add_resource(RecordSchemaListView, API_CONFIG['PREFIX'] + '/schema/record')
-api.add_resource(RecordSchemaView, API_CONFIG['PREFIX'] + '/schema/record/<int:id>')
-
-api.add_resource(ItemSchemaListView, API_CONFIG['PREFIX'] + '/schema/item')
-api.add_resource(ItemSchemaView, API_CONFIG['PREFIX'] + '/schema/item/<int:id>')
+item_schema_bp = api_manager.create_api_blueprint(ItemSchema,
+                                                  collection_name='itemschema',
+                                                  methods=['GET', 'POST'])
+record_schema_bp = api_manager.create_api_blueprint(RecordSchema,
+                                                    collection_name='recordschema',
+                                                    methods=['GET', 'POST'])
