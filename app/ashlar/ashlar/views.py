@@ -1,5 +1,4 @@
-from flask import Blueprint, request, render_template, redirect
-from ashlar import app
+from flask import Blueprint
 
 hello = Blueprint('hello', __name__)
 

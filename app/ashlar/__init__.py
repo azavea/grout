@@ -1,32 +1,29 @@
 #!/usr/bin/env python
 
-# Import flask and template operators
 from flask import Flask, render_template
-
-# Import SQLAlchemy
 from flask.ext.sqlalchemy import SQLAlchemy
+from flask_restful import Api
+
+from ashlar import urls
+from ashlar.views import hello as hello_module
 
 # Define the WSGI application object
 app = Flask(__name__)
-
-# Configurations
 app.config.from_object('config')
 
-# Define the database object which is imported
-# by modules and controllers
-# TODO: set up database
 db = SQLAlchemy(app)
 
-# Sample HTTP error handling
-@app.errorhandler(404)
-def not_found(error):
-    return render_template('404.html'), 404
+# Any module inits that require app and db
+# must be imported after app is defined above
+from api import api_blueprint as api_module
+from api import status
 
-from ashlar import urls
-
-from ashlar.views import hello as hello_module
 app.register_blueprint(hello_module)
+app.register_blueprint(api_module)
 
-# Build the database:
-# This will create the database file using SQLAlchemy
-# db.create_all()
+
+# Sample HTTP error handling
+@app.errorhandler(status.HTTP_404_NOTFOUND)
+def not_found(error):
+    return render_template('404.html'), status.HTTP_404_NOTFOUND
+
