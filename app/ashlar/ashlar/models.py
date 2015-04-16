@@ -9,8 +9,9 @@ import jsonschema
 
 from geoalchemy2.types import Geometry
 
+from ashlar import db
 
-BaseModel = declarative_base()
+BaseModel = db.Model
 
 
 class AshlarModel(BaseModel):
@@ -26,6 +27,15 @@ class SchemaModel(AshlarModel):
 
     version = Column(Integer, nullable=False)
     schema = Column(JSONB)
+
+    def validate_json(self, json_dict):
+        """Validates a JSON-like dictionary against this object's schema
+
+        :param json_dict: Python dict representing json to be validated against self.schema
+        :return: None if validation succeeds; jsonschema.exceptions.ValidationError if failure
+                 (or jsonschema.exceptions.SchemaError if the schema is invalid)
+        """
+        return jsonschema.validate(json_dict, self.schema)
 
 
 class Record(AshlarModel):
