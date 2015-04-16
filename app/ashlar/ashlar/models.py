@@ -1,5 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import ForeignKey, Column, create_engine
+from sqlalchemy import ForeignKey, Column, create_engine, inspect
 from sqlalchemy.types import Integer, String, Float, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import func, UniqueConstraint
@@ -21,6 +21,27 @@ class AshlarModel(BaseModel):
     id = Column(Integer, primary_key=True)
     created = Column(DateTime(timezone=True), nullable=False, default=func.now())
     modified = Column(DateTime(timezone=True), nullable=False, server_onupdate=func.now(), default=func.now())
+
+    def to_dict(self):
+        """ Return a dict representation of our model
+
+        Ugh. Couldn't find a method in sqlalchemy to automagically do this.
+        TODO: Dynamically inspect column type and properly return str representation of it.
+        Not sure how to get this info from the returned column object
+        For now we do the naive thing and check on column name for non string/int columns
+
+        """
+        mapper = inspect(self.__class__)
+        obj = {}
+        for column in mapper.attrs:
+            key = column.key
+            value = getattr(self, key)
+            if key in ['created', 'modified']:
+                value = value.isoformat()
+            if value:
+                obj[key] = value
+        return obj
+
 
 
 class SchemaModel(AshlarModel):
