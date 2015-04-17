@@ -6,15 +6,16 @@ from sqlalchemy import func, UniqueConstraint
 from sqlalchemy.schema import Index
 from sqlalchemy.orm import validates
 
+from geoalchemy2.types import Geometry
+
 import jsonschema
 from jsonschema.exceptions import SchemaError, ValidationError
 
-from geoalchemy2.types import Geometry
+#from geometries import Point
+from exceptions import SchemaException
 
-from ashlar import db
-from ashlar.ashlar.exceptions import SchemaException
 
-BaseModel = db.Model
+BaseModel = declarative_base()
 
 
 class AshlarModel(BaseModel):
