@@ -2,9 +2,9 @@ from __future__ import absolute_import
 
 from flask import Blueprint
 from flask.ext.restless import APIManager
-from flask_restful import Api
 
 from ashlar import app, db
+from ashlar.ashlar.exceptions import SchemaException
 from ashlar.ashlar.models import Record, RecordSchema, ItemSchema
 
 
@@ -38,7 +38,9 @@ record_bp = api_manager.create_api_blueprint(Record,
 
 item_schema_bp = api_manager.create_api_blueprint(ItemSchema,
                                                   collection_name='itemschema',
+                                                  validation_exceptions=[SchemaException],
                                                   methods=['GET', 'POST'])
 record_schema_bp = api_manager.create_api_blueprint(RecordSchema,
                                                     collection_name='recordschema',
+                                                    validation_exceptions=[SchemaException],
                                                     methods=['GET', 'POST'])

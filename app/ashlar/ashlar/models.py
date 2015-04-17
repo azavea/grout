@@ -7,10 +7,12 @@ from sqlalchemy.schema import Index
 from sqlalchemy.orm import validates
 
 import jsonschema
+from jsonschema.exceptions import SchemaError, ValidationError
 
 from geoalchemy2.types import Geometry
 
 from ashlar import db
+from ashlar.ashlar.exceptions import SchemaException
 
 BaseModel = db.Model
 
@@ -46,7 +48,10 @@ class SchemaModel(AshlarModel):
         :return: None if schema validates; raises jsonschema.exceptions.SchemaError
             if schema is invalid
         """
-        jsonschema.Draft4Validator.check_schema(schema)
+        try:
+            jsonschema.Draft4Validator.check_schema(schema)
+        except (SchemaError, ValidationError) as error:
+            raise SchemaException(error.message)
         return schema
 
 
