@@ -5,6 +5,5 @@ from pprint import pprint
 
 from flask import *
 from ashlar import *
-from ashlar.ashlar.models import *
 
 os.environ['PYTHONINSPECT'] = 'True'

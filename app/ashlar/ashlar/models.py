@@ -11,13 +11,11 @@ from geoalchemy2.types import Geometry
 import jsonschema
 from jsonschema.exceptions import SchemaError, ValidationError
 
-from ashlar import db
-
-#from ashlar.ashlar.geometries import Point
-from ashlar.ashlar.exceptions import SchemaException
+#from geometries import Point
+from exceptions import SchemaException
 
 
-BaseModel = db.Model
+BaseModel = declarative_base()
 
 
 class AshlarModel(BaseModel):
