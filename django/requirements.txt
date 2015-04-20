@@ -1,0 +1,7 @@
+ipython
+ipdb
+psycopg2
+django==1.8
+django-pgjson
+django-extensions
+djangorestframework
