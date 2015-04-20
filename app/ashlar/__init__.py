@@ -2,7 +2,6 @@
 
 from flask import Flask, render_template
 from flask.ext.sqlalchemy import SQLAlchemy
-from flask_restful import Api
 
 from ashlar import urls
 from ashlar.views import hello as hello_module

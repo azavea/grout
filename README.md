@@ -9,3 +9,9 @@ Requires Vagrant 1.5+, Ansible 1.8+ and the following plugins:
 Install plugins before `vagrant up` via: `vagrant plugin install <plugin-name>`
 
 App runs on host on port 7000.
+
+To open a shell, run:
+`python shell.py` or `ipython -i shell.py`
+
+## Testing
+From `app` directory: `python -m test`
