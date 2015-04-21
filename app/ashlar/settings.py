@@ -122,4 +122,4 @@ STATIC_URL = '/static/'
 # It is suggested to change this if you know that your data will be limited to
 # a certain part of the world, for example to a UTM Grid projection or a state
 # plane.
-ASHLAR_SRID = '3857'
+ASHLAR_SRID = 3857
