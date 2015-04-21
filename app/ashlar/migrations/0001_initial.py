@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
                 ('occurred_to', models.DateTimeField()),
                 ('label', models.CharField(max_length=50)),
                 ('slug', models.CharField(max_length=50)),
-                ('geom', django.contrib.gis.db.models.fields.PointField(srid=b'3857')),
+                ('geom', django.contrib.gis.db.models.fields.PointField(srid=3857)),
                 ('data', django_pgjson.fields.JsonBField()),
             ],
             options={
