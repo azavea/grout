@@ -1,9 +1,11 @@
 from rest_framework.serializers import ModelSerializer
 
+from rest_framework_gis.serializers import GeoModelSerializer
+
 from ashlar.models import Record, RecordSchema, ItemSchema
 
 
-class RecordSerializer(ModelSerializer):
+class RecordSerializer(GeoModelSerializer):
 
     class Meta:
         model = Record

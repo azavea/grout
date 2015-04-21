@@ -55,6 +55,8 @@ class Record(AshlarModel):
     schema_id = models.ForeignKey('RecordSchema')
     data = JsonBField()
 
+    objects = models.GeoManager()
+
 
 class RecordSchema(SchemaModel):
     """Schemas for spatiotemporal records"""
