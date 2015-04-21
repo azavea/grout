@@ -13,6 +13,6 @@ server {
     }
 
     location /static/ {
-        alias {{ root_static_dir }}/;
+        root {{ root_www_dir }}/;
     }
 }
