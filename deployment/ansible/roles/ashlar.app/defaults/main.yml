@@ -5,7 +5,7 @@ app_log: "/var/log/ashlar.log"
 root_app_dir: "/opt/app"
 ashlar_session_timeout_s: 40
 root_py_dir: "{{ root_app_dir }}/ashlar"
-root_static_dir: "{{ root_py_dir }}/static" # TODO: copy assets
+root_static_dir: "{{ root_app_dir }}/static" # TODO: copy assets
 
 database_driver: "postgresql"
 database_host: "database.service.ashlar.internal"
