@@ -52,7 +52,7 @@ class Record(AshlarModel):
     slug = models.CharField(max_length=50)
 
     geom = models.PointField(srid=settings.ASHLAR_SRID)
-    schema_id = models.ForeignKey('RecordSchema')
+    schema = models.ForeignKey('RecordSchema')
     data = JsonBField()
 
     objects = models.GeoManager()
