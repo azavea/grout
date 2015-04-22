@@ -1,9 +1,5 @@
 ---
 
-- name: Add root_py_dir to pythonpath
-  lineinfile: dest=/etc/environment
-              line="PYTHONPATH={{ root_py_dir }}:$PYTHONPATH"
-
 - name: Install dev packages
   apt: name={{ item }}
   with_items:
