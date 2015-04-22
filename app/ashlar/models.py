@@ -73,3 +73,40 @@ class ItemSchema(SchemaModel):
 
     class Meta(object):
         unique_together = (('slug', 'version'),)
+
+
+class Boundary(AshlarModel):
+    """ MultiPolygon objects which contain related geometries for filtering/querying """
+
+    class StatusTypes(object):
+        PENDING = 'pen'
+        PROCESSING = 'pro'
+        ERROR = 'err'
+        WARNING = 'war'
+        COMPLETE = 'com'
+        CHOICES = (
+            (PENDING, 'Pending'),
+            (PROCESSING, 'Processing'),
+            (WARNING, 'Warning'),
+            (ERROR, 'Error'),
+            (COMPLETE, 'Complete'),
+        )
+
+    status = models.CharField(max_length=10,
+                              choices=StatusTypes.CHOICES,
+                              default=StatusTypes.PENDING)
+    label = models.CharField(max_length=64)
+    # No index, only going to display these, not query atm
+    errors = JsonBField(blank=True, null=True)
+    source_file = models.FileField(upload_to='boundaries/%Y/%m/%d')
+    geom = models.MultiPolygonField(srid=settings.ASHLAR_SRID, blank=True, null=True)
+
+    objects = models.GeoManager()
+
+    def load_shapefile(self):
+        """ Validate the shapefile saved on disk and load into db """
+        self.status = self.StatusTypes.PROCESSING
+        self.save()
+        ## ....Load shapefile from disk, validate and actually load into geom column!
+        self.status = self.StatusTypes.COMPLETE
+        self.save()

@@ -51,6 +51,13 @@
         mode=0775
         state=directory
 
+- name: Create media files directory
+  file: path={{ root_media_dir }}
+        owner={{ app_username }}
+        group={{ app_username }}
+        mode=0775
+        state=directory
+
 - name: Copy app configuration
   template: src=secrets.yaml.j2 dest=/etc/secrets.yaml mode=0660
             owner={{ app_username }} group={{ app_username }}

@@ -121,6 +121,11 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = secrets['ashlar_static_dir']
 
+# Media files (uploaded via API)
+# https://docs.djangoproject.com/en/1.8/topics/files/
+
+MEDIA_ROOT = secrets['ashlar_media_dir']
+
 # Django Rest Framework
 # http://www.django-rest-framework.org/
 
