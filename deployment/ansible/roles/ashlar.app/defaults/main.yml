@@ -5,8 +5,8 @@ app_log: "/var/log/ashlar.log"
 root_app_dir: "/opt/app"
 ashlar_session_timeout_s: 40
 root_py_dir: "{{ root_app_dir }}/ashlar"
-root_static_dir: "/var/www/static"
+root_www_dir: "/var/www"
+root_static_dir: "{{ root_www_dir }}/static"
 
 database_driver: "postgresql"
 database_host: "database.service.ashlar.internal"
-database_uri: "{{ database_driver }}://{{ postgresql_username }}:{{ postgresql_password }}@{{ database_host }}/{{ postgresql_database }}"
