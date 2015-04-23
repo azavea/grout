@@ -4,6 +4,7 @@ from rest_framework_gis.filters import InBBoxFilter
 
 from ashlar.models import Boundary, Record, RecordSchema, ItemSchema
 from serializers import (BoundarySerializer,
+                         BoundaryListSerializer,
                          RecordSerializer,
                          RecordSchemaSerializer,
                          ItemSchemaSerializer)
@@ -33,5 +34,7 @@ class ItemSchemaViewSet(viewsets.ModelViewSet):
 class BoundaryViewSet(viewsets.ModelViewSet):
 
     queryset = Boundary.objects.all()
-    serializer_class = BoundarySerializer
     filter_class = BoundaryFilter
+
+    def get_serializer_class(self):
+        return BoundaryListSerializer if self.action == 'list' else BoundarySerializer
