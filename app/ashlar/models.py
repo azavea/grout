@@ -139,6 +139,8 @@ class Boundary(AshlarModel):
             self.status = self.StatusTypes.COMPLETE
             self.save()
         except Exception as e:
+            if self.errors is None:
+                self.errors = {}
             self.errors['message'] = str(e)
             self.status = self.StatusTypes.ERROR
             self.save()
