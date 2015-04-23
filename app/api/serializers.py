@@ -35,7 +35,10 @@ class ItemSchemaSerializer(ModelSerializer):
 
 class BoundarySerializer(GeoModelSerializer):
 
-    errors = JsonBField()
+    # TODO: How do we automagically detect that this is a nullable field and
+    #   set allow_null accordingly?
+    #   I guess we could just create a NullJsonBField instead?
+    errors = JsonBField(allow_null=True)
 
     class Meta:
         model = Boundary
