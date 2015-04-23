@@ -46,6 +46,20 @@ class SerializerJsonBFieldTestCase(TestCase):
         with self.assertRaises(ValidationError):
             self.jsonb_field.to_internal_value('invalid')
 
+    def test_allow_null_jsonb_field(self):
+        """ Ensure falsy values convert to None, except empty objects/arrays """
+        null_jsonb_field = JsonBField(allow_null=True)
+        to_value = null_jsonb_field.to_internal_value(None)
+        self.assertEqual(to_value, None)
+
+        to_value = null_jsonb_field.to_internal_value('')
+        self.assertEqual(to_value, None)
+
+        to_value = null_jsonb_field.to_internal_value({})
+        self.assertEqual(to_value, {})
+
+        to_value = null_jsonb_field.to_internal_value([])
+        self.assertEqual(to_value, [])
 
 class SerializerJsonSchemaFieldTestCase(SerializerJsonBFieldTestCase):
     """ Test serializer field for json schema """

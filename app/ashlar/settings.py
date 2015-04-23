@@ -121,6 +121,12 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = secrets['ashlar_static_dir']
 
+# Media files (uploaded via API)
+# https://docs.djangoproject.com/en/1.8/topics/files/
+
+MEDIA_ROOT = secrets['ashlar_media_dir']
+MEDIA_URL = '/media/'
+
 # Django Rest Framework
 # http://www.django-rest-framework.org/
 
@@ -130,7 +136,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_FILTER_BACKENDS': ('rest_framework.filters.DjangoFilterBackend',),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 10
+    'PAGE_SIZE': 10,
 }
 
 # It is suggested to change this if you know that your data will be limited to

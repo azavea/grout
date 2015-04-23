@@ -1,11 +1,19 @@
+import os
+import shutil
 import uuid
 
 from django.contrib.gis.db import models
+from django.contrib.gis.gdal import DataSource as GDALDataSource
 from django_pgjson.fields import JsonBField
 
 import jsonschema
 
 from django.conf import settings
+
+from api.imports.shapefile import (extract_zip_to_temp_dir,
+                                   get_shapefiles_in_dir,
+                                   get_union,
+                                   make_multipolygon)
 
 
 class AshlarModel(models.Model):
@@ -73,3 +81,68 @@ class ItemSchema(SchemaModel):
 
     class Meta(object):
         unique_together = (('slug', 'version'),)
+
+
+class Boundary(AshlarModel):
+    """ MultiPolygon objects which contain related geometries for filtering/querying """
+
+    class StatusTypes(object):
+        PENDING = 'PENDING'
+        PROCESSING = 'PROCESSING'
+        ERROR = 'ERROR'
+        WARNING = 'WARNING'
+        COMPLETE = 'COMPLETE'
+        CHOICES = (
+            (PENDING, 'Pending'),
+            (PROCESSING, 'Processing'),
+            (WARNING, 'Warning'),
+            (ERROR, 'Error'),
+            (COMPLETE, 'Complete'),
+        )
+
+    status = models.CharField(max_length=10,
+                              choices=StatusTypes.CHOICES,
+                              default=StatusTypes.PENDING)
+    label = models.CharField(max_length=64)
+    # No index, only going to display these, not query atm
+    errors = JsonBField(blank=True, null=True)
+    source_file = models.FileField(upload_to='boundaries/%Y/%m/%d')
+    geom = models.MultiPolygonField(srid=settings.ASHLAR_SRID, blank=True, null=True)
+
+    objects = models.GeoManager()
+
+    def load_shapefile(self):
+        """ Validate the shapefile saved on disk and load into db """
+        self.status = self.StatusTypes.PROCESSING
+        self.save()
+
+        try:
+            temp_dir = extract_zip_to_temp_dir(self.source_file)
+            shapefiles = get_shapefiles_in_dir(temp_dir)
+
+            if len(shapefiles) != 1:
+                raise ValueError('Exactly one shapefile (.shp) required')
+
+            shapefile_path = os.path.join(temp_dir, shapefiles[0])
+            shape_datasource = GDALDataSource(shapefile_path)
+            if len(shape_datasource) > 1:
+                raise ValueError('Shapefile must have exactly one layer')
+
+            boundary_layer = shape_datasource[0]
+            if boundary_layer.srs is None:
+                raise ValueError('Shapefile must include a .prj file')
+
+            union = get_union([feature.geom for feature in boundary_layer])
+            union.transform(settings.ASHLAR_SRID)
+            geometry = make_multipolygon(union)
+            self.geom = geometry
+            self.status = self.StatusTypes.COMPLETE
+            self.save()
+        except Exception as e:
+            if self.errors is None:
+                self.errors = {}
+            self.errors['message'] = str(e)
+            self.status = self.StatusTypes.ERROR
+            self.save()
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)

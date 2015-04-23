@@ -9,6 +9,7 @@ router = routers.DefaultRouter()
 router.register('record', views.RecordViewSet)
 router.register('recordschema', views.RecordSchemaViewSet)
 router.register('itemschema', views.ItemSchemaViewSet)
+router.register('boundary', views.BoundaryViewSet)
 
 urlpatterns = [
     # Examples:

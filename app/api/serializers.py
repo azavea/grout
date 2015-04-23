@@ -1,8 +1,9 @@
-from rest_framework.serializers import ModelSerializer
+from collections import Iterable
 
+from rest_framework.serializers import ModelSerializer
 from rest_framework_gis.serializers import GeoModelSerializer
 
-from ashlar.models import Record, RecordSchema, ItemSchema
+from ashlar.models import Boundary, Record, RecordSchema, ItemSchema
 from serializer_fields import JsonBField, JsonSchemaField
 
 
@@ -31,3 +32,28 @@ class ItemSchemaSerializer(ModelSerializer):
     class Meta:
         model = ItemSchema
         read_only_fields = ('uuid',)
+
+
+class BoundarySerializer(GeoModelSerializer):
+
+    # TODO: How do we automagically detect that this is a nullable field and
+    #   set allow_null accordingly?
+    #   I guess we could just create a NullJsonBField instead?
+    errors = JsonBField(allow_null=True)
+
+    def create(self, validated_data):
+        boundary = Boundary.objects.create(**validated_data)
+        boundary.load_shapefile()
+        return boundary
+
+    class Meta:
+        model = Boundary
+        read_only_fields = ('uuid', 'status', 'errors', 'geom',)
+
+
+class BoundaryListSerializer(BoundarySerializer):
+
+    class Meta:
+        # Need to redefine model, but not other properties?
+        model = Boundary
+        exclude = ('geom',)

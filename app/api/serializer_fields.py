@@ -20,6 +20,8 @@ class JsonBField(Field):
     def to_internal_value(self, value):
         if isinstance(value, dict) or isinstance(value, list):
             return value
+        elif self.allow_null and not value:
+            return None
         else:
             raise ValidationError('Array or object required')
 
