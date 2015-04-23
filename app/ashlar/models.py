@@ -1,11 +1,19 @@
+import os
+import shutil
 import uuid
 
 from django.contrib.gis.db import models
+from django.contrib.gis.gdal import DataSource as GDALDataSource
 from django_pgjson.fields import JsonBField
 
 import jsonschema
 
 from django.conf import settings
+
+from api.imports.shapefile import (extract_zip_to_temp_dir,
+                                   get_shapefiles_in_dir,
+                                   get_union,
+                                   make_multipolygon)
 
 
 class AshlarModel(models.Model):
@@ -107,6 +115,32 @@ class Boundary(AshlarModel):
         """ Validate the shapefile saved on disk and load into db """
         self.status = self.StatusTypes.PROCESSING
         self.save()
-        ## ....Load shapefile from disk, validate and actually load into geom column!
-        self.status = self.StatusTypes.COMPLETE
-        self.save()
+
+        try:
+            temp_dir = extract_zip_to_temp_dir(self.source_file)
+            shapefiles = get_shapefiles_in_dir(temp_dir)
+
+            if len(shapefiles) != 1:
+                raise ValueError('Exactly one shapefile (.shp) required')
+
+            shapefile_path = os.path.join(temp_dir, shapefiles[0])
+            shape_datasource = GDALDataSource(shapefile_path)
+            if len(shape_datasource) > 1:
+                raise ValueError('Shapefile must have exactly one layer')
+
+            boundary_layer = shape_datasource[0]
+            if boundary_layer.srs is None:
+                raise ValueError('Shapefile must include a .prj file')
+
+            union = get_union([feature.geom for feature in boundary_layer])
+            union.transform(settings.ASHLAR_SRID)
+            geometry = make_multipolygon(union)
+            self.geom = geometry
+            self.status = self.StatusTypes.COMPLETE
+            self.save()
+        except Exception as e:
+            self.errors['message'] = str(e)
+            self.status = self.StatusTypes.ERROR
+            self.save()
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)

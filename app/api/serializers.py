@@ -40,6 +40,11 @@ class BoundarySerializer(GeoModelSerializer):
     #   I guess we could just create a NullJsonBField instead?
     errors = JsonBField(allow_null=True)
 
+    def create(self, validated_data):
+        boundary = Boundary.objects.create(**validated_data)
+        boundary.load_shapefile()
+        return boundary
+
     class Meta:
         model = Boundary
         read_only_fields = ('uuid', 'status', 'errors', 'geom',)
