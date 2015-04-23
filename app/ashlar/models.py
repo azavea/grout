@@ -79,11 +79,11 @@ class Boundary(AshlarModel):
     """ MultiPolygon objects which contain related geometries for filtering/querying """
 
     class StatusTypes(object):
-        PENDING = 'pen'
-        PROCESSING = 'pro'
-        ERROR = 'err'
-        WARNING = 'war'
-        COMPLETE = 'com'
+        PENDING = 'PENDING'
+        PROCESSING = 'PROCESSING'
+        ERROR = 'ERROR'
+        WARNING = 'WARNING'
+        COMPLETE = 'COMPLETE'
         CHOICES = (
             (PENDING, 'Pending'),
             (PROCESSING, 'Processing'),
