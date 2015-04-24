@@ -155,3 +155,5 @@ class BoundaryPolygon(AshlarModel):
     boundary = models.ForeignKey('Boundary', related_name='polygons', null=True)
     data = JsonBField()
     geom = models.MultiPolygonField(srid=settings.ASHLAR_SRID)
+
+    objects = models.GeoManager()

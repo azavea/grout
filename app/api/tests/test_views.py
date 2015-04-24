@@ -105,4 +105,20 @@ class BoundaryViewTestCase(AshlarAPITestCase):
         self.assertIsNotNone(response.data['errors'])
         self.assertEqual(response.data['status'], Boundary.StatusTypes.ERROR)
 
+    def test_geojson_response(self):
+        """ Create shape, then test that geojson serializes out properly """
+        zipfile = open(os.path.join(self.files_dir, 'bayarea_macosx.zip'), 'rb')
+        data = {
+            'color': 'red',
+            'label': 'foobar',
+            'source_file': zipfile
+        }
+        url = reverse('boundary-list')
+        response = self.client.post(url, data)
+        uuid = response.data['uuid']
 
+        url = '{}geojson/'.format(reverse('boundary-detail', args=[uuid]))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['type'], 'FeatureCollection')
+        self.assertEqual(len(response.data['features']), 3)
