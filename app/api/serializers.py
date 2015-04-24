@@ -36,19 +36,21 @@ class ItemSchemaSerializer(ModelSerializer):
 
 class BoundarySerializer(GeoModelSerializer):
 
-    # TODO: How do we automagically detect that this is a nullable field and
-    #   set allow_null accordingly?
-    #   I guess we could just create a NullJsonBField instead?
-    errors = JsonBField(allow_null=True)
+    errors = JsonBField(read_only=True, allow_null=True)
 
     def create(self, validated_data):
-        boundary = Boundary.objects.create(**validated_data)
+        boundary = super(BoundarySerializer, self).create(validated_data)
         boundary.load_shapefile()
         return boundary
 
     class Meta:
         model = Boundary
-        read_only_fields = ('uuid', 'status', 'errors', 'geom',)
+        # These meta read_only/exclude settings only apply to the fields the ModelSerializer
+        # instantiates for you by default. If you override a field manually, you need to override
+        # all settings there.
+        # e.g. adding 'errors' to this tuple has no effect, since we manually define the errors
+        # field above
+        read_only_fields = ('uuid', 'status', 'geom',)
 
 
 class BoundaryListSerializer(BoundarySerializer):
