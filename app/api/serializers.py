@@ -1,5 +1,6 @@
 from collections import Iterable
 
+from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from rest_framework_gis.serializers import GeoModelSerializer
 
@@ -36,6 +37,9 @@ class ItemSchemaSerializer(ModelSerializer):
 
 class BoundarySerializer(GeoModelSerializer):
 
+    color = serializers.CharField(max_length=64)
+    display_field = serializers.CharField(max_length=10, allow_blank=True, required=False)
+    data_fields = JsonBField(read_only=True, allow_null=True)
     errors = JsonBField(read_only=True, allow_null=True)
 
     def create(self, validated_data):
@@ -50,12 +54,4 @@ class BoundarySerializer(GeoModelSerializer):
         # all settings there.
         # e.g. adding 'errors' to this tuple has no effect, since we manually define the errors
         # field above
-        read_only_fields = ('uuid', 'status', 'geom',)
-
-
-class BoundaryListSerializer(BoundarySerializer):
-
-    class Meta:
-        # Need to redefine model, but not other properties?
-        model = Boundary
-        exclude = ('geom',)
+        read_only_fields = ('uuid', 'status',)
