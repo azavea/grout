@@ -45,7 +45,6 @@ class BoundaryViewTestCase(AshlarAPITestCase):
     def test_create_adds_geom_from_valid_shapefile(self):
         zipfile = open(os.path.join(self.files_dir, 'philly.zip'), 'rb')
         data = {
-            'errors': '',
             'label': 'foobar',
             'source_file': zipfile
         }
@@ -59,7 +58,6 @@ class BoundaryViewTestCase(AshlarAPITestCase):
         """ Ensure __MACOSX files in archive don't wreck the upload """
         zipfile = open(os.path.join(self.files_dir, 'bayarea_macosx.zip'), 'rb')
         data = {
-            'errors': '',
             'label': 'foobar',
             'source_file': zipfile
         }
