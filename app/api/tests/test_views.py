@@ -4,7 +4,7 @@ from django.core.urlresolvers import reverse
 
 from rest_framework import status
 
-from ashlar.models import Boundary
+from ashlar.models import Boundary, BoundaryPolygon
 from api.tests.api_test_case import AshlarAPITestCase
 
 
@@ -18,20 +18,16 @@ class BoundaryViewTestCase(AshlarAPITestCase):
         self.boundary2 = Boundary.objects.create(label='fooOK', source_file='foo.zip',
                                             status=Boundary.StatusTypes.COMPLETE)
 
-    def test_list_no_geom_field(self):
-        """ Ensure geom not in boundary list view """
+    def post_boundary(self, zip_filename):
+        """ Helper method to create a new boundary via POST """
+        zipfile = open(os.path.join(self.files_dir, zip_filename), 'rb')
+        data = {
+            'color': 'red',
+            'label': 'foobar',
+            'source_file': zipfile
+        }
         url = reverse('boundary-list')
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        boundary = response.data['results'][0]
-        self.assertNotIn('geom', boundary.keys())
-
-    def test_get_geom_field(self):
-        """ Ensure geom field in boundary detail view """
-        url = reverse('boundary-detail', args=[self.boundary1.uuid])
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('geom', response.data.keys())
+        return self.client.post(url, data)
 
     def test_status_get_filter(self):
         url = '{}?status={}'.format(reverse('boundary-list'), Boundary.StatusTypes.COMPLETE)
@@ -43,26 +39,62 @@ class BoundaryViewTestCase(AshlarAPITestCase):
         self.assertEqual(boundary['status'], Boundary.StatusTypes.COMPLETE)
 
     def test_create_adds_geom_from_valid_shapefile(self):
-        zipfile = open(os.path.join(self.files_dir, 'philly.zip'), 'rb')
-        data = {
-            'label': 'foobar',
-            'source_file': zipfile
-        }
-        url = reverse('boundary-list')
-        response = self.client.post(url, data)
+        response = self.post_boundary('philly.zip')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertIn('geom', response.data.keys())
-        self.assertIsNotNone(response.data['geom'])
+        boundary_uuid = response.data['uuid']
+        boundary = Boundary.objects.get(uuid=boundary_uuid)
+        self.assertGreater(boundary.polygons.count(), 0)
 
     def test_create_from_macosx_shapefile(self):
         """ Ensure __MACOSX files in archive don't wreck the upload """
-        zipfile = open(os.path.join(self.files_dir, 'bayarea_macosx.zip'), 'rb')
-        data = {
-            'label': 'foobar',
-            'source_file': zipfile
-        }
-        url = reverse('boundary-list')
-        response = self.client.post(url, data)
+        response = self.post_boundary('bayarea_macosx.zip')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertIn('geom', response.data.keys())
-        self.assertIsNotNone(response.data['geom'])
+        boundary_uuid = response.data['uuid']
+        boundary = Boundary.objects.get(uuid=boundary_uuid)
+        self.assertGreater(boundary.polygons.count(), 0)
+
+    def test_boundary_crud(self):
+        """ Already tested create, so don't bother, but test other operations """
+        response = self.post_boundary('philly.zip')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        boundary_dict = response.data
+        uuid = boundary_dict['uuid']
+
+        url = reverse('boundary-detail', args=[uuid])
+
+        # Read back list and ensure same as boundary dict
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, boundary_dict)
+
+        # Update display field to be first in result display_fields
+        display_field = boundary_dict['data_fields'][0]
+        data = {
+            'uuid': uuid,
+            'display_field': display_field
+        }
+        response = self.client.patch(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['display_field'], display_field)
+
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_invalid_shapefile(self):
+        """ This shapefile has points, not polygons """
+        """ Already tested create, so don't bother, but test other operations """
+        response = self.post_boundary('points.zip')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIsNotNone(response.data['errors'])
+        self.assertEqual(response.data['status'], Boundary.StatusTypes.ERROR)
+
+    def test_geojson_response(self):
+        """ Create shape, then test that geojson serializes out properly """
+        response = self.post_boundary('bayarea_macosx.zip')
+        uuid = response.data['uuid']
+
+        url = '{}geojson/'.format(reverse('boundary-detail', args=[uuid]))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['type'], 'FeatureCollection')
+        self.assertEqual(len(response.data['features']), 3)

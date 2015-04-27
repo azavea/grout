@@ -12,7 +12,6 @@ from django.conf import settings
 
 from api.imports.shapefile import (extract_zip_to_temp_dir,
                                    get_shapefiles_in_dir,
-                                   get_union,
                                    make_multipolygon)
 
 
@@ -104,12 +103,12 @@ class Boundary(AshlarModel):
                               choices=StatusTypes.CHOICES,
                               default=StatusTypes.PENDING)
     label = models.CharField(max_length=64)
-    # No index, only going to display these, not query atm
+    # Store any valid css color string
+    color = models.CharField(max_length=64, default='blue')
+    display_field = models.CharField(max_length=10, blank=True, null=True)
+    data_fields = JsonBField(blank=True, null=True)
     errors = JsonBField(blank=True, null=True)
     source_file = models.FileField(upload_to='boundaries/%Y/%m/%d')
-    geom = models.MultiPolygonField(srid=settings.ASHLAR_SRID, blank=True, null=True)
-
-    objects = models.GeoManager()
 
     def load_shapefile(self):
         """ Validate the shapefile saved on disk and load into db """
@@ -131,11 +130,13 @@ class Boundary(AshlarModel):
             boundary_layer = shape_datasource[0]
             if boundary_layer.srs is None:
                 raise ValueError('Shapefile must include a .prj file')
+            self.data_fields = boundary_layer.fields
+            for feature in boundary_layer:
+                feature.geom.transform(settings.ASHLAR_SRID)
+                geometry = make_multipolygon(feature.geom)
+                data = {field: feature.get(field) for field in self.data_fields}
+                self.polygons.create(geom=geometry, data=data)
 
-            union = get_union([feature.geom for feature in boundary_layer])
-            union.transform(settings.ASHLAR_SRID)
-            geometry = make_multipolygon(union)
-            self.geom = geometry
             self.status = self.StatusTypes.COMPLETE
             self.save()
         except Exception as e:
@@ -146,3 +147,13 @@ class Boundary(AshlarModel):
             self.save()
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+class BoundaryPolygon(AshlarModel):
+    """ Individual boundaries and associated data for each geom in a BoundaryUpload """
+
+    boundary = models.ForeignKey('Boundary', related_name='polygons', null=True)
+    data = JsonBField()
+    geom = models.MultiPolygonField(srid=settings.ASHLAR_SRID)
+
+    objects = models.GeoManager()
