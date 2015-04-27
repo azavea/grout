@@ -18,6 +18,17 @@ class BoundaryViewTestCase(AshlarAPITestCase):
         self.boundary2 = Boundary.objects.create(label='fooOK', source_file='foo.zip',
                                             status=Boundary.StatusTypes.COMPLETE)
 
+    def post_boundary(self, zip_filename):
+        """ Helper method to create a new boundary via POST """
+        zipfile = open(os.path.join(self.files_dir, zip_filename), 'rb')
+        data = {
+            'color': 'red',
+            'label': 'foobar',
+            'source_file': zipfile
+        }
+        url = reverse('boundary-list')
+        return self.client.post(url, data)
+
     def test_status_get_filter(self):
         url = '{}?status={}'.format(reverse('boundary-list'), Boundary.StatusTypes.COMPLETE)
         response = self.client.get(url, format='json')
@@ -28,14 +39,7 @@ class BoundaryViewTestCase(AshlarAPITestCase):
         self.assertEqual(boundary['status'], Boundary.StatusTypes.COMPLETE)
 
     def test_create_adds_geom_from_valid_shapefile(self):
-        zipfile = open(os.path.join(self.files_dir, 'philly.zip'), 'rb')
-        data = {
-            'color': 'red',
-            'label': 'foobar',
-            'source_file': zipfile
-        }
-        url = reverse('boundary-list')
-        response = self.client.post(url, data)
+        response = self.post_boundary('philly.zip')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         boundary_uuid = response.data['uuid']
         boundary = Boundary.objects.get(uuid=boundary_uuid)
@@ -43,14 +47,7 @@ class BoundaryViewTestCase(AshlarAPITestCase):
 
     def test_create_from_macosx_shapefile(self):
         """ Ensure __MACOSX files in archive don't wreck the upload """
-        zipfile = open(os.path.join(self.files_dir, 'bayarea_macosx.zip'), 'rb')
-        data = {
-            'color': 'red',
-            'label': 'foobar',
-            'source_file': zipfile
-        }
-        url = reverse('boundary-list')
-        response = self.client.post(url, data)
+        response = self.post_boundary('bayarea_macosx.zip')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         boundary_uuid = response.data['uuid']
         boundary = Boundary.objects.get(uuid=boundary_uuid)
@@ -58,14 +55,7 @@ class BoundaryViewTestCase(AshlarAPITestCase):
 
     def test_boundary_crud(self):
         """ Already tested create, so don't bother, but test other operations """
-        zipfile = open(os.path.join(self.files_dir, 'philly.zip'), 'rb')
-        data = {
-            'color': 'red',
-            'label': 'foobar',
-            'source_file': zipfile
-        }
-        url = reverse('boundary-list')
-        response = self.client.post(url, data)
+        response = self.post_boundary('philly.zip')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         boundary_dict = response.data
         uuid = boundary_dict['uuid']
@@ -93,28 +83,14 @@ class BoundaryViewTestCase(AshlarAPITestCase):
     def test_invalid_shapefile(self):
         """ This shapefile has points, not polygons """
         """ Already tested create, so don't bother, but test other operations """
-        zipfile = open(os.path.join(self.files_dir, 'points.zip'), 'rb')
-        data = {
-            'color': 'red',
-            'label': 'foobar',
-            'source_file': zipfile
-        }
-        url = reverse('boundary-list')
-        response = self.client.post(url, data)
+        response = self.post_boundary('points.zip')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIsNotNone(response.data['errors'])
         self.assertEqual(response.data['status'], Boundary.StatusTypes.ERROR)
 
     def test_geojson_response(self):
         """ Create shape, then test that geojson serializes out properly """
-        zipfile = open(os.path.join(self.files_dir, 'bayarea_macosx.zip'), 'rb')
-        data = {
-            'color': 'red',
-            'label': 'foobar',
-            'source_file': zipfile
-        }
-        url = reverse('boundary-list')
-        response = self.client.post(url, data)
+        response = self.post_boundary('bayarea_macosx.zip')
         uuid = response.data['uuid']
 
         url = '{}geojson/'.format(reverse('boundary-detail', args=[uuid]))
