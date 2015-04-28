@@ -5,7 +5,7 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeoModelSerializer
 
 from ashlar.models import Boundary, BoundaryPolygon, Record, RecordSchema, ItemSchema
-from serializer_fields import JsonBField, JsonSchemaField
+from ashlar.serializer_fields import JsonBField, JsonSchemaField
 
 
 class RecordSerializer(GeoModelSerializer):

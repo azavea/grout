@@ -3,7 +3,7 @@ from django.contrib import admin
 
 from rest_framework import routers
 
-from api import views
+from ashlar import views
 
 router = routers.DefaultRouter()
 router.register('record', views.RecordViewSet)

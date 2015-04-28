@@ -7,12 +7,12 @@ from rest_framework.response import Response
 from rest_framework_gis.filters import InBBoxFilter
 
 from ashlar.models import Boundary, Record, RecordSchema, ItemSchema
-from serializers import (BoundarySerializer,
-                         BoundaryPolygonSerializer,
-                         RecordSerializer,
-                         RecordSchemaSerializer,
-                         ItemSchemaSerializer)
-from filters import BoundaryFilter, RecordFilter, JsonBFilterBackend
+from ashlar.serializers import (BoundarySerializer,
+                                BoundaryPolygonSerializer,
+                                RecordSerializer,
+                                RecordSchemaSerializer,
+                                ItemSchemaSerializer)
+from ashlar.filters import BoundaryFilter, RecordFilter, JsonBFilterBackend
 
 
 class RecordViewSet(viewsets.ModelViewSet):

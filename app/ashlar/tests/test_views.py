@@ -5,7 +5,7 @@ from django.core.urlresolvers import reverse
 from rest_framework import status
 
 from ashlar.models import Boundary, BoundaryPolygon
-from api.tests.api_test_case import AshlarAPITestCase
+from ashlar.tests.api_test_case import AshlarAPITestCase
 
 
 class BoundaryViewTestCase(AshlarAPITestCase):

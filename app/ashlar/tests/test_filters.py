@@ -7,11 +7,9 @@ from rest_framework.exceptions import ParseError
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
-
-from api.filters import JsonBFilterBackend
-from api.views import RecordSchemaViewSet
-
+from ashlar.filters import JsonBFilterBackend
 from ashlar.models import RecordSchema
+from ashlar.views import RecordSchemaViewSet
 
 
 class JsonBFilterViewSet(viewsets.ModelViewSet):
