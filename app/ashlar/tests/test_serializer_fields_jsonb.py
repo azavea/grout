@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from api.serializer_fields import JsonBField, JsonSchemaField
+from ashlar.serializer_fields import JsonBField, JsonSchemaField
 
 class SerializerJsonBFieldTestCase(TestCase):
     """ Test serializer field for JsonB """

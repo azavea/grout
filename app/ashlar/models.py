@@ -10,7 +10,7 @@ import jsonschema
 
 from django.conf import settings
 
-from api.imports.shapefile import (extract_zip_to_temp_dir,
+from ashlar.imports.shapefile import (extract_zip_to_temp_dir,
                                    get_shapefiles_in_dir,
                                    make_multipolygon)
 
