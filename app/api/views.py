@@ -32,12 +32,23 @@ class RecordSchemaViewSet(viewsets.ModelViewSet):
 
     queryset = RecordSchema.objects.all()
     serializer_class = RecordSchemaSerializer
+    jsonb_filter_field = 'schema'
+    jsonb_filters = (
+        ('jcontains', False),
+    )
+    filter_backends = (JsonBFilterBackend, DjangoFilterBackend)
 
 
 class ItemSchemaViewSet(viewsets.ModelViewSet):
 
     queryset = ItemSchema.objects.all()
     serializer_class = ItemSchemaSerializer
+    jsonb_filter_field = 'schema'
+    jsonb_filters = (
+        ('jcontains', False),
+    )
+    filter_backends = (JsonBFilterBackend, DjangoFilterBackend)
+
 
 class BoundaryViewSet(viewsets.ModelViewSet):
 
