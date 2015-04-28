@@ -12,7 +12,7 @@ from serializers import (BoundarySerializer,
                          RecordSerializer,
                          RecordSchemaSerializer,
                          ItemSchemaSerializer)
-from filters import BoundaryFilter, RecordFilter
+from filters import BoundaryFilter, RecordFilter, JsonBFilterBackend
 
 
 class RecordViewSet(viewsets.ModelViewSet):
@@ -21,7 +21,11 @@ class RecordViewSet(viewsets.ModelViewSet):
     serializer_class = RecordSerializer
     filter_class = RecordFilter
     bbox_filter_field = 'geom'
-    filter_backends = (InBBoxFilter, DjangoFilterBackend)
+    jsonb_filter_field = 'data'
+    jsonb_filters = (
+        ('jcontains', False),
+    )
+    filter_backends = (InBBoxFilter, JsonBFilterBackend, DjangoFilterBackend)
 
 
 class RecordSchemaViewSet(viewsets.ModelViewSet):
