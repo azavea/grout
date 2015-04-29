@@ -14,6 +14,7 @@
     - { name: 'Django', version: '1.8' }
     - { name: 'djangorestframework', version: '3.1.1' }
     - { name: 'djangorestframework-gis', version: '0.8.1' }
+    - { name: 'django-oauth-toolkit', version: '0.8.1' }
     - { name: 'django-filter', version: '0.9.2' }
     - { name: 'jsonschema', version: '2.4.0' }
     - { name: 'django-pgjson', version: '0.2.3' }
