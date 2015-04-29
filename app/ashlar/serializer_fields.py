@@ -2,8 +2,10 @@ from django.core.exceptions import ValidationError
 
 from rest_framework.fields import Field
 
-import jsonschema
 from jsonschema.exceptions import SchemaError
+
+from ashlar.models import SchemaModel
+
 
 class JsonBField(Field):
     """ Custom serializer class for JsonB
@@ -34,7 +36,7 @@ class JsonSchemaField(JsonBField):
     def to_internal_value(self, value):
         super(JsonSchemaField, self).to_internal_value(value)
         try:
-            jsonschema.Draft4Validator.check_schema(value)
+            SchemaModel.validate_schema(value)
             return value
         except SchemaError as e:
             raise ValidationError('Invalid schema: {}'.format(e.message))

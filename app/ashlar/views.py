@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from rest_framework import status, viewsets
+from rest_framework import viewsets, mixins
 from rest_framework.decorators import detail_route
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
@@ -28,8 +28,15 @@ class RecordViewSet(viewsets.ModelViewSet):
     filter_backends = (InBBoxFilter, JsonBFilterBackend, DjangoFilterBackend)
 
 
-class RecordSchemaViewSet(viewsets.ModelViewSet):
+class SchemaViewSet(viewsets.GenericViewSet,
+                    mixins.ListModelMixin,
+                    mixins.CreateModelMixin,
+                    mixins.RetrieveModelMixin,
+                    mixins.UpdateModelMixin):  # No deletion
+    """Base ViewSet for viewsets displaying subclasses of SchemaModel"""
 
+
+class RecordSchemaViewSet(SchemaViewSet):
     queryset = RecordSchema.objects.all()
     serializer_class = RecordSchemaSerializer
     jsonb_filter_field = 'schema'
@@ -39,8 +46,7 @@ class RecordSchemaViewSet(viewsets.ModelViewSet):
     filter_backends = (JsonBFilterBackend, DjangoFilterBackend)
 
 
-class ItemSchemaViewSet(viewsets.ModelViewSet):
-
+class ItemSchemaViewSet(SchemaViewSet):
     queryset = ItemSchema.objects.all()
     serializer_class = ItemSchemaSerializer
     jsonb_filter_field = 'schema'

@@ -11,8 +11,8 @@ import jsonschema
 from django.conf import settings
 
 from ashlar.imports.shapefile import (extract_zip_to_temp_dir,
-                                   get_shapefiles_in_dir,
-                                   make_multipolygon)
+                                      get_shapefiles_in_dir,
+                                      make_multipolygon)
 
 
 class AshlarModel(models.Model):
@@ -25,8 +25,9 @@ class AshlarModel(models.Model):
 
 
 class SchemaModel(AshlarModel):
-    version = models.IntegerField()
+    version = models.PositiveIntegerField()
     schema = JsonBField()
+    next_version = models.OneToOneField('self', related_name='previous_version', null=True, editable=False)
 
     class Meta(object):
         abstract = True
@@ -40,10 +41,9 @@ class SchemaModel(AshlarModel):
         """
         return jsonschema.validate(json_dict, self.schema)
 
-    # TODO: May want to move to serializer
-    def validate_schema(self, key, schema):
+    @classmethod
+    def validate_schema(self, schema):
         """Validates that this object's schema is a valid JSON-Schema schema
-        :param key: Name of the field being validated
         :param schema: Python dict representing json schema that should be checked
         :return: None if schema validates; raises jsonschema.exceptions.SchemaError
             if schema is invalid

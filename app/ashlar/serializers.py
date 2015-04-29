@@ -1,5 +1,6 @@
-from collections import Iterable
+from django.db import transaction
 
+from rest_framework import fields
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeoModelSerializer
@@ -17,22 +18,41 @@ class RecordSerializer(GeoModelSerializer):
         read_only_fields = ('uuid',)
 
 
-class RecordSchemaSerializer(ModelSerializer):
-
+class SchemaSerializer(ModelSerializer):
+    """Base class for serializers of subclasses of models.SchemaModel"""
     schema = JsonSchemaField()
+    version = serializers.IntegerField(read_only=True,
+                                       default=fields.CreateOnlyDefault(1))
 
+    def update(self, instance, validated_data):
+        """Updates by creating a new version"""
+        if instance.next_version:
+            raise serializers.ValidationError('Cannot create next_version; this object already has one')
+        with transaction.atomic():
+            prev_pk = instance.pk
+            # 'Clone' instance by setting pk to None, updating with new data
+            instance.pk = None
+            instance.version += 1
+            validated_data.pop('version', None)
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
+            prev_instance = instance.__class__.objects.get(pk=prev_pk)
+            prev_instance.next_version_id = instance.pk
+            prev_instance.save()
+        return instance
+
+
+class RecordSchemaSerializer(SchemaSerializer):
     class Meta:
         model = RecordSchema
-        read_only_fields = ('uuid',)
+        read_only_fields = ('uuid', 'next_version')
 
 
-class ItemSchemaSerializer(ModelSerializer):
-
-    schema = JsonSchemaField()
-
+class ItemSchemaSerializer(SchemaSerializer):
     class Meta:
         model = ItemSchema
-        read_only_fields = ('uuid',)
+        read_only_fields = ('uuid', 'next_version')
 
 
 class BoundaryPolygonSerializer(GeoFeatureModelSerializer):
