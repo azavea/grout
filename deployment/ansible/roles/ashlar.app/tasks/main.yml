@@ -82,3 +82,7 @@
 
 - name: Run django migrations
   django_manage: command=migrate app_path={{ root_app_dir }}
+
+- name: Add OAuth2 default application (development only)
+  django_manage: command="create_oauth_app admin" app_path={{ root_app_dir }}
+  when: developing_or_testing
