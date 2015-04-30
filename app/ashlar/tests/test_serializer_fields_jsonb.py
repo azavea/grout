@@ -2,6 +2,8 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from ashlar.serializer_fields import JsonBField, JsonSchemaField
+from ashlar.validators import validate_json_schema
+
 
 class SerializerJsonBFieldTestCase(TestCase):
     """ Test serializer field for JsonB """
@@ -61,6 +63,7 @@ class SerializerJsonBFieldTestCase(TestCase):
         to_value = null_jsonb_field.to_internal_value([])
         self.assertEqual(to_value, [])
 
+
 class SerializerJsonSchemaFieldTestCase(SerializerJsonBFieldTestCase):
     """ Test serializer field for json schema """
 
@@ -72,7 +75,6 @@ class SerializerJsonSchemaFieldTestCase(SerializerJsonBFieldTestCase):
                                  "price": {"type": "number"},
                                  "name": {"type": "string"},
                              }}
-        self.invalid_schema = { "type": "any" }
 
     def test_to_representation(self):
         """ Pass through internal dict to dict, no transformation necessary """
@@ -85,5 +87,17 @@ class SerializerJsonSchemaFieldTestCase(SerializerJsonBFieldTestCase):
         to_value = self.json_schema_field.to_internal_value(self.valid_schema)
         self.assertEqual(to_value, self.valid_schema)
 
+    def test_has_schema_validator(self):
+        """Make sure JsonSchemaField has the proper validator"""
+        self.assertIn(validate_json_schema, self.json_schema_field.validators)
+
+
+class JsonSchemaValidatorTestCase(TestCase):
+    """Test JSON schema validation"""
+    def setUp(self):
+        self.invalid_schema = {"type": "any"}
+
+    def test_schema_validation(self):
+        """Ensure that JSON Schema validation is properly wrapped in a ValidationError"""
         with self.assertRaises(ValidationError):
-            self.json_schema_field.to_internal_value(self.invalid_schema)
+            validate_json_schema(self.invalid_schema)

@@ -2,9 +2,7 @@ from django.core.exceptions import ValidationError
 
 from rest_framework.fields import Field
 
-from jsonschema.exceptions import SchemaError
-
-from ashlar.models import SchemaModel
+from ashlar.validators import validate_json_schema
 
 
 class JsonBField(Field):
@@ -29,14 +27,6 @@ class JsonBField(Field):
 
 
 class JsonSchemaField(JsonBField):
-    """ Extend JsonBField to validate on conversion """
-
+    """Json Field that also validates whether it is a JSON-Schema"""
     type_name = 'JsonSchemaField'
-
-    def to_internal_value(self, value):
-        super(JsonSchemaField, self).to_internal_value(value)
-        try:
-            SchemaModel.validate_schema(value)
-            return value
-        except SchemaError as e:
-            raise ValidationError('Invalid schema: {}'.format(e.message))
+    validators = [validate_json_schema]
