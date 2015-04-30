@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from rest_framework import status, viewsets
+from rest_framework import viewsets, mixins
 from rest_framework.decorators import detail_route
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
@@ -28,8 +28,14 @@ class RecordViewSet(viewsets.ModelViewSet):
     filter_backends = (InBBoxFilter, JsonBFilterBackend, DjangoFilterBackend)
 
 
-class RecordSchemaViewSet(viewsets.ModelViewSet):
+class SchemaViewSet(viewsets.GenericViewSet,
+                    mixins.ListModelMixin,
+                    mixins.CreateModelMixin,
+                    mixins.RetrieveModelMixin):  # Schemas are immutable
+    """Base ViewSet for viewsets displaying subclasses of SchemaModel"""
 
+
+class RecordSchemaViewSet(SchemaViewSet):
     queryset = RecordSchema.objects.all()
     serializer_class = RecordSchemaSerializer
     jsonb_filter_field = 'schema'
@@ -38,9 +44,22 @@ class RecordSchemaViewSet(viewsets.ModelViewSet):
     )
     filter_backends = (JsonBFilterBackend, DjangoFilterBackend)
 
+    # N.B. The DRF documentation is misleading; if you include named parameters as
+    # shown in the documentation, this will cause list and detail endpoints to
+    # throw Serializer errors.
+    def get_serializer(self, *args, **kwargs):
+        """Override data passed to serializer with incremented version if necessary"""
+        if self.action == 'create' and 'data' in kwargs and 'record_type' in kwargs['data']:
+            try:
+                version = RecordSchema.objects.get(record_type=kwargs['data']['record_type'],
+                                                   next_version=None).version + 1
+            except RecordSchema.DoesNotExist:
+                version = 1
+            kwargs['data']['version'] = version
+        return super(RecordSchemaViewSet, self).get_serializer(*args, **kwargs)
 
-class ItemSchemaViewSet(viewsets.ModelViewSet):
 
+class ItemSchemaViewSet(SchemaViewSet):
     queryset = ItemSchema.objects.all()
     serializer_class = ItemSchemaSerializer
     jsonb_filter_field = 'schema'

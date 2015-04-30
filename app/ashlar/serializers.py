@@ -1,5 +1,6 @@
-from collections import Iterable
+from django.db import transaction
 
+from rest_framework import fields
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeoModelSerializer
@@ -17,22 +18,36 @@ class RecordSerializer(GeoModelSerializer):
         read_only_fields = ('uuid',)
 
 
-class RecordSchemaSerializer(ModelSerializer):
-
+class SchemaSerializer(ModelSerializer):
+    """Base class for serializers of subclasses of models.SchemaModel"""
     schema = JsonSchemaField()
+
+
+class RecordSchemaSerializer(SchemaSerializer):
+    def create(self, validated_data):
+        """Creates new schema or creates new version and updates next_version of previous"""
+        if validated_data['version'] > 1:  # Viewset's get_serializer() will always add 'version'
+            with transaction.atomic():
+                current = RecordSchema.objects.get(record_type=validated_data['record_type'],
+                                                   next_version=None)
+                new = RecordSchema.objects.create(**validated_data)
+                current.next_version = new
+                current.save()
+        elif validated_data['version'] == 1:  # New record_type
+            new = RecordSchema.objects.create(**validated_data)
+        else:
+            raise serializers.ValidationError('Schema version could not be determined')
+        return new
 
     class Meta:
         model = RecordSchema
-        read_only_fields = ('uuid',)
+        read_only_fields = ('uuid', 'next_version')
 
 
-class ItemSchemaSerializer(ModelSerializer):
-
-    schema = JsonSchemaField()
-
+class ItemSchemaSerializer(SchemaSerializer):
     class Meta:
         model = ItemSchema
-        read_only_fields = ('uuid',)
+        read_only_fields = ('uuid', 'next_version')
 
 
 class BoundaryPolygonSerializer(GeoFeatureModelSerializer):
