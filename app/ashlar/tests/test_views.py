@@ -5,7 +5,6 @@ from django.core.urlresolvers import reverse
 
 from rest_framework import status
 
-from ashlar.models import Boundary, BoundaryPolygon
 from ashlar.tests.api_test_case import AshlarAPITestCase
 from ashlar.models import Boundary, BoundaryPolygon, RecordSchema, ItemSchema
 
@@ -34,19 +33,26 @@ class RecordSchemaViewTestCase(AshlarAPITestCase):
                           "record_type": "foo"}"""
         response = self.client.post(url, schema_data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+        response_data = json.loads(response.content)
+        self.assertEqual(response_data['version'], 1)
 
-    def test_cant_create_duplicates(self):
-        """Test that attempting to create a duplicate record_type / version fails"""
-        RecordSchema.objects.create(schema={"type": "object"}, version=1, record_type='foo')
+    def test_create_new_version(self):
+        """Test that creating a new Schema with an existing record_type increments version"""
+        schema = RecordSchema.objects.create(schema={"type": "object"}, version=1, record_type='foo')
         schema_data = """{"schema": {"type": "object"},
-                       "version": 1,
                        "record_type": "foo"}"""
         url = reverse('recordschema-list')
         response = self.client.post(url, schema_data, content_type='application/json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+        response_data = json.loads(response.content)
+        self.assertEqual(response_data['version'], schema.version + 1)
+        # Reload schema from db; its next_version should have changed.
+        schema = RecordSchema.objects.get(pk=schema.pk)
+        self.assertEqual(unicode(schema.next_version.pk), response_data['uuid'])
+        self.assertEqual(RecordSchema.objects.filter(record_type=schema.record_type).count(), 2)
 
-    def test_update(self):
-        """Basic test that updating an existing record works"""
+    def test_no_update(self):
+        """Test that schemas are immutable"""
         schema = RecordSchema.objects.create(schema={"type": "object"}, version=1, record_type='foo')
         schema_data = """{"schema": { },
                           "version": 1,
@@ -54,29 +60,9 @@ class RecordSchemaViewTestCase(AshlarAPITestCase):
         url = reverse('recordschema-detail', args=(schema.pk,))
         # Attempt to update existing schema
         response = self.client.patch(url, schema_data, content_type='application/json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
-        pass
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED, response.content)
 
-    def test_update_versioning(self):
-        """Test that updating an existing record increments the version and sets next_version"""
-        schema = RecordSchema.objects.create(schema={"type": "object"}, version=1, record_type='foo')
-        schema_data = """{"schema": {"type": "object",
-                                     "properties": {"name": {"type": "string"}}},
-                          "version": 1,
-                          "record_type": "foo"}"""
-        url = reverse('recordschema-detail', args=(schema.pk,))
-        response_data = json.loads(self.client.patch(url,
-                                                     schema_data,
-                                                     content_type='application/json').content)
-        self.assertEqual(response_data['version'], schema.version + 1)
-        self.assertEqual(response_data['record_type'], schema.record_type)
-        self.assertEqual(response_data['schema'], json.loads(schema_data)['schema'])
-        # Reload schema from db; its next_version should have changed.
-        schema = RecordSchema.objects.get(pk=schema.pk)
-        self.assertEqual(unicode(schema.next_version.pk), response_data['uuid'])
-        self.assertEqual(RecordSchema.objects.filter(record_type=schema.record_type).count(), 2)
-
-    def test_delete(self):
+    def test_no_delete(self):
         """Test that deletion doesn't work"""
         schema = RecordSchema.objects.create(schema={"type": "object"}, version=1, record_type='foo')
         url = reverse('recordschema-detail', args=(schema.pk,))
@@ -90,9 +76,9 @@ class BoundaryViewTestCase(AshlarAPITestCase):
         super(BoundaryViewTestCase, self).setUp()
 
         self.boundary1 = Boundary.objects.create(label='foo', source_file='foo.zip',
-                                            status=Boundary.StatusTypes.ERROR)
+                                                 status=Boundary.StatusTypes.ERROR)
         self.boundary2 = Boundary.objects.create(label='fooOK', source_file='foo.zip',
-                                            status=Boundary.StatusTypes.COMPLETE)
+                                                 status=Boundary.StatusTypes.COMPLETE)
 
     def post_boundary(self, zip_filename):
         """ Helper method to create a new boundary via POST """

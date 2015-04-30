@@ -27,7 +27,8 @@ class AshlarModel(models.Model):
 class SchemaModel(AshlarModel):
     version = models.PositiveIntegerField()
     schema = JsonBField()
-    next_version = models.OneToOneField('self', related_name='previous_version', null=True, editable=False)
+    next_version = models.OneToOneField('self', related_name='previous_version', null=True,
+                                        editable=False)
 
     class Meta(object):
         abstract = True
@@ -67,12 +68,17 @@ class Record(AshlarModel):
 
 class RecordSchema(SchemaModel):
     """Schemas for spatiotemporal records"""
+    # TODO: This field may need to be broken out into a separate model so that it can
+    # supported label, slug_label, description, etc.
     record_type = models.CharField(max_length=50)
 
     class Meta(object):
         unique_together = (('record_type', 'version'),)
 
 
+# TODO: This model is currently not very useful and doesn't parallel the way
+# RecordSchemas work. This should be expanded or deleted as we get a better
+# sense of whether / how we want to use subschemas.
 class ItemSchema(SchemaModel):
     """Subschemas for logical "items" which can be included in Record data"""
     label = models.CharField(max_length=50)

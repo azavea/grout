@@ -21,29 +21,24 @@ class RecordSerializer(GeoModelSerializer):
 class SchemaSerializer(ModelSerializer):
     """Base class for serializers of subclasses of models.SchemaModel"""
     schema = JsonSchemaField()
-    version = serializers.IntegerField(read_only=True,
-                                       default=fields.CreateOnlyDefault(1))
-
-    def update(self, instance, validated_data):
-        """Updates by creating a new version"""
-        if instance.next_version:
-            raise serializers.ValidationError('Cannot create next_version; this object already has one')
-        with transaction.atomic():
-            prev_pk = instance.pk
-            # 'Clone' instance by setting pk to None, updating with new data
-            instance.pk = None
-            instance.version += 1
-            validated_data.pop('version', None)
-            for attr, value in validated_data.items():
-                setattr(instance, attr, value)
-            instance.save()
-            prev_instance = instance.__class__.objects.get(pk=prev_pk)
-            prev_instance.next_version_id = instance.pk
-            prev_instance.save()
-        return instance
 
 
 class RecordSchemaSerializer(SchemaSerializer):
+    def create(self, validated_data):
+        """Creates new schema or creates new version and updates next_version of previous"""
+        if validated_data['version'] > 1:  # Viewset's get_serializer() will always add 'version'
+            with transaction.atomic():
+                current = RecordSchema.objects.get(record_type=validated_data['record_type'],
+                                                   next_version=None)
+                new = RecordSchema.objects.create(**validated_data)
+                current.next_version = new
+                current.save()
+        elif validated_data['version'] == 1:  # New record_type
+            new = RecordSchema.objects.create(**validated_data)
+        else:
+            raise serializers.ValidationError('Schema version could not be determined')
+        return new
+
     class Meta:
         model = RecordSchema
         read_only_fields = ('uuid', 'next_version')
