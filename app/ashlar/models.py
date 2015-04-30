@@ -2,13 +2,12 @@ import os
 import shutil
 import uuid
 
+from django.conf import settings
 from django.contrib.gis.db import models
 from django.contrib.gis.gdal import DataSource as GDALDataSource
 from django_pgjson.fields import JsonBField
 
 import jsonschema
-
-from django.conf import settings
 
 from ashlar.imports.shapefile import (extract_zip_to_temp_dir,
                                    get_shapefiles_in_dir,
@@ -58,7 +57,7 @@ class Record(AshlarModel):
     label = models.CharField(max_length=50)  # Human-readable
     slug = models.CharField(max_length=50)
 
-    geom = models.PointField(srid=settings.ASHLAR_SRID)
+    geom = models.PointField(srid=settings.ASHLAR['SRID'])
     schema = models.ForeignKey('RecordSchema')
     data = JsonBField()
 
@@ -132,7 +131,7 @@ class Boundary(AshlarModel):
                 raise ValueError('Shapefile must include a .prj file')
             self.data_fields = boundary_layer.fields
             for feature in boundary_layer:
-                feature.geom.transform(settings.ASHLAR_SRID)
+                feature.geom.transform(settings.ASHLAR['SRID'])
                 geometry = make_multipolygon(feature.geom)
                 data = {field: feature.get(field) for field in self.data_fields}
                 self.polygons.create(geom=geometry, data=data)
@@ -154,6 +153,6 @@ class BoundaryPolygon(AshlarModel):
 
     boundary = models.ForeignKey('Boundary', related_name='polygons', null=True)
     data = JsonBField()
-    geom = models.MultiPolygonField(srid=settings.ASHLAR_SRID)
+    geom = models.MultiPolygonField(srid=settings.ASHLAR['SRID'])
 
     objects = models.GeoManager()

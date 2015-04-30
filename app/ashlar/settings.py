@@ -19,6 +19,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 with open('/etc/secrets.yaml', 'r') as f:
     secrets = yaml.load(f)
 
+DEVELOP = True if secrets['development'] else False
+PRODUCTION = not DEVELOP
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
@@ -27,7 +29,7 @@ with open('/etc/secrets.yaml', 'r') as f:
 SECRET_KEY = '3xm=1k1a)1!l$)h#qlfp0ms$i6*nai$e2dz!0tt*iphoto3vmh'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = DEVELOP
 
 ALLOWED_HOSTS = []
 
@@ -43,6 +45,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.gis',
     'rest_framework',
+    'oauth2_provider',
 
     'django_extensions',
 
@@ -126,19 +129,42 @@ STATIC_ROOT = secrets['ashlar_static_dir']
 MEDIA_ROOT = secrets['ashlar_media_dir']
 MEDIA_URL = '/media/'
 
+# Django OAuth Toolkit
+# https://github.com/evonove/django-oauth-toolkit
+
+OAUTH2_PROVIDER = {
+    # Some default sensible scopes, could change later if more fine-grained scopes are necessary
+    'SCOPES': {'read': 'Read scope', 'write': 'Write scope', 'groups': 'Access to your groups'}
+}
+
 # Django Rest Framework
 # http://www.django-rest-framework.org/
 
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
-    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'oauth2_provider.ext.rest_framework.OAuth2Authentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
     'DEFAULT_FILTER_BACKENDS': ('rest_framework.filters.DjangoFilterBackend',),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 10,
 }
 
-# It is suggested to change this if you know that your data will be limited to
-# a certain part of the world, for example to a UTM Grid projection or a state
-# plane.
-ASHLAR_SRID = 3857
+ASHLAR = {
+    # It is suggested to change this if you know that your data will be limited to
+    # a certain part of the world, for example to a UTM Grid projection or a state
+    # plane.
+    'SRID': 3857,
+}
+
+## Tweak settings depending on deployment target
+if DEVELOP:
+    # Disable on production, this is for the browseable API only
+    REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] += ('rest_framework.authentication.SessionAuthentication',)
+
+if PRODUCTION:
+    # Enabled on production? This allows locking write permissions on views
+    # to users that request tokens with write scope
+    REST_FRAMEWORK['DEFAULT_PERMISSION_CLASSES'] += ('oauth2_provider.ext.rest_framework.TokenHasReadWriteScope',)

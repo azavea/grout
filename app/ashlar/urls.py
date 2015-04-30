@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
 
@@ -12,10 +13,11 @@ router.register('itemschema', views.ItemSchemaViewSet)
 router.register('boundary', views.BoundaryViewSet)
 
 urlpatterns = [
-    # Examples:
-    # url(r'^$', 'ashlar.views.home', name='home'),
-    # url(r'^blog/', include('blog.urls')),
-
     url(r'^admin/', include(admin.site.urls)),
     url(r'^api/', include(router.urls)),
+    url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
 ]
+
+# Allow login to the browseable API if in debug mode
+if settings.DEVELOP:
+    urlpatterns.append(url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')))
