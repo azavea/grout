@@ -6,4 +6,5 @@ azavea.gunicorn,0.1.0
 azavea.git,0.1.0
 azavea.python,0.1.0
 azavea.pip,0.1.0
+azavea.ruby,0.3.0
 azavea.nodejs,0.3.0

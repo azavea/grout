@@ -7,3 +7,4 @@
     - { role: "azavea.nginx", nginx_delete_default_site: False }
     - { role: "azavea.nodejs" }
     - { role: "azavea.postgresql-support"}
+    - { role: "ashlar.web"}
