@@ -19,3 +19,6 @@ postgresql_hba_mapping:
 ## APP SETTINGS
 csrf_session_key: "seekrit"
 cookie_secret_key: "seekrit"
+
+## WEB SETTINGS
+js_html5mode: "false"

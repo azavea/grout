@@ -16,3 +16,7 @@ postgresql_package_version: "9.4.1*.pgdg14.04+1"
 postgresql_host: "localhost"
 postgresql_port: 5432
 postgresql_version: "9.4"
+
+## WEB SETTINGS
+js_html5mode: "true"
+js_html5mode_prefix: "!"

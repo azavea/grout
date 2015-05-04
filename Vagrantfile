@@ -117,8 +117,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     if testing?
         app.vm.synced_folder "./app", "/opt/app"
+        app.vm.synced_folder "./schema_editor", "/opt/web"
     else
         app.vm.synced_folder "./app", "/opt/app", :nfs => true
+        app.vm.synced_folder "./schema_editor", "/opt/web", :nfs => true
         # Mount options causing some users trouble, disable until necessary (e.g. a grunt/gulp install)
         #app.vm.synced_folder "./app", "/opt/app", :nfs => true, :mount_options => [
             #("nfsvers=3" if ENV.fetch("ASHLAR_NFS_VERSION_3", false)),
@@ -130,8 +132,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # nginx
     app.vm.network "forwarded_port", guest: 80, host: Integer(ENV.fetch("ASHLAR_WEB_PORT_80", 7000))
 
-    # app debug
-    app.vm.network "forwarded_port", guest: 4000, host: 3000
+    # Runserver
+    app.vm.network "forwarded_port", guest: 4000, host: Integer(ENV.fetch("ASHLAR_DJANGO_PORT_3000", 3000))
+    # Grunt serve
+    app.vm.network "forwarded_port", guest: 9000, host: Integer(ENV.fetch("ASHLAR_GRUNT_PORT_7001", 7001))
 
     app.vm.provision "ansible" do |ansible|
       ansible.playbook = "deployment/ansible/app.yml"
