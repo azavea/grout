@@ -34,7 +34,7 @@ class AshlarAPITestCase(APITestCase):
         # TODO: Set test specific users for authentication that aren't admins?
         self.client.force_authenticate(user=self.user)
 
-        self.files_dir = os.path.join('ashlar', 'tests', 'files')
+        self.files_dir = os.path.join('tests', 'files')
 
     def tearDown(self):
         super(AshlarAPITestCase, self).tearDown()
