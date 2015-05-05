@@ -6,12 +6,11 @@ from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework_gis.filters import InBBoxFilter
 
-from ashlar.models import Boundary, Record, RecordSchema, ItemSchema
+from ashlar.models import Boundary, Record, RecordSchema
 from ashlar.serializers import (BoundarySerializer,
                                 BoundaryPolygonSerializer,
                                 RecordSerializer,
-                                RecordSchemaSerializer,
-                                ItemSchemaSerializer)
+                                RecordSchemaSerializer)
 from ashlar.filters import BoundaryFilter, RecordFilter, JsonBFilterBackend
 
 
@@ -57,16 +56,6 @@ class RecordSchemaViewSet(SchemaViewSet):
                 version = 1
             kwargs['data']['version'] = version
         return super(RecordSchemaViewSet, self).get_serializer(*args, **kwargs)
-
-
-class ItemSchemaViewSet(SchemaViewSet):
-    queryset = ItemSchema.objects.all()
-    serializer_class = ItemSchemaSerializer
-    jsonb_filter_field = 'schema'
-    jsonb_filters = (
-        ('jcontains', False),
-    )
-    filter_backends = (JsonBFilterBackend, DjangoFilterBackend)
 
 
 class BoundaryViewSet(viewsets.ModelViewSet):

@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-from ashlar.models import RecordSchema, Record, ItemSchema
+from ashlar.models import RecordSchema, Record
 
 
 class Migration(migrations.Migration):
@@ -37,10 +37,4 @@ class Migration(migrations.Migration):
                                                       table=RecordSchema._meta.db_table,
                                                       column=_get_field_db_column(RecordSchema, 'schema')),
                           drop_gin_index_sql.format(index_name='ashlar_recordschema_schema_gin')),
-
-        # ItemSchema
-        migrations.RunSQL(create_gin_index_sql.format(index_name='ashlar_itemschema_schema_gin',
-                                                      table=ItemSchema._meta.db_table,
-                                                      column=_get_field_db_column(ItemSchema, 'schema')),
-                          drop_gin_index_sql.format(index_name='ashlar_itemschema_schema_gin'))
     ]

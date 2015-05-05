@@ -75,18 +75,6 @@ class RecordSchema(SchemaModel):
         unique_together = (('record_type', 'version'),)
 
 
-# TODO: This model is currently not very useful and doesn't parallel the way
-# RecordSchemas work. This should be expanded or deleted as we get a better
-# sense of whether / how we want to use subschemas.
-class ItemSchema(SchemaModel):
-    """Subschemas for logical "items" which can be included in Record data"""
-    label = models.CharField(max_length=50)
-    slug = models.CharField(max_length=50, unique=True)
-
-    class Meta(object):
-        unique_together = (('slug', 'version'),)
-
-
 class Boundary(AshlarModel):
     """ MultiPolygon objects which contain related geometries for filtering/querying """
 

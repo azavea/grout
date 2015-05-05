@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeoModelSerializer
 
-from ashlar.models import Boundary, BoundaryPolygon, Record, RecordSchema, ItemSchema
+from ashlar.models import Boundary, BoundaryPolygon, Record, RecordSchema
 from ashlar.serializer_fields import JsonBField, JsonSchemaField
 
 
@@ -41,12 +41,6 @@ class RecordSchemaSerializer(SchemaSerializer):
 
     class Meta:
         model = RecordSchema
-        read_only_fields = ('uuid', 'next_version')
-
-
-class ItemSchemaSerializer(SchemaSerializer):
-    class Meta:
-        model = ItemSchema
         read_only_fields = ('uuid', 'next_version')
 
 
