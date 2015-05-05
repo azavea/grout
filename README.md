@@ -3,6 +3,10 @@
 
 ## Developing
 
+**Ashlar is under heavy development in tandem with
+[DRIVER](https://github.com/WorldBank-Transport/DRIVER); currently the best way to develop
+on Ashlar is to set up a DRIVER VM and use that.**
+
 Requires Vagrant 1.5+, Ansible 1.8+ and the following plugins:
   - `vagrant-hostmanager`
 

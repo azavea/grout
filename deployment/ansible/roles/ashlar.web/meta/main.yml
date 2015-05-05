@@ -1,5 +1,0 @@
----
-  dependencies:
-    - { role: "azavea.git" }
-    - { role: "azavea.nodejs", nodejs_npm_version: "2.1.5" }
-    - { role: "azavea.ruby", ruby_development: True }

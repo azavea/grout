@@ -1,6 +1,0 @@
----
-- name: Restart ashlar
-  service: name=ashlar state=restarted
-
-- name: Restart nginx
-  service: name=nginx state=restarted
