@@ -9,6 +9,7 @@ from ashlar import views
 router = routers.DefaultRouter()
 router.register('record', views.RecordViewSet)
 router.register('recordschema', views.RecordSchemaViewSet)
+router.register('recordtype', views.RecordTypeViewSet)
 router.register('boundary', views.BoundaryViewSet)
 
 urlpatterns = [

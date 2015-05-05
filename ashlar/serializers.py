@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeoModelSerializer
 
-from ashlar.models import Boundary, BoundaryPolygon, Record, RecordSchema
+from ashlar.models import Boundary, BoundaryPolygon, Record, RecordType, RecordSchema
 from ashlar.serializer_fields import JsonBField, JsonSchemaField
 
 
@@ -18,12 +18,19 @@ class RecordSerializer(GeoModelSerializer):
         read_only_fields = ('uuid',)
 
 
+class RecordTypeSerializer(ModelSerializer):
+
+    class Meta:
+        model = RecordType
+
+
 class SchemaSerializer(ModelSerializer):
     """Base class for serializers of subclasses of models.SchemaModel"""
     schema = JsonSchemaField()
 
 
 class RecordSchemaSerializer(SchemaSerializer):
+
     def create(self, validated_data):
         """Creates new schema or creates new version and updates next_version of previous"""
         if validated_data['version'] > 1:  # Viewset's get_serializer() will always add 'version'
