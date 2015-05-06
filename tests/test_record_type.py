@@ -2,14 +2,13 @@
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
-from ashlar.models import RecordSchema
+from ashlar.models import RecordSchema, RecordType
 
 
 class RecordSchemaTestCase(TestCase):
 
     def test_get_current_schema(self):
         """Ensure that duplicate versions of the same schema cannot exist"""
-        # TODO: Run this test and ensure it passes, currently no test suite
         record_type = RecordType.objects.create(label='foo', plural_label='foos')
         empty_record_type = RecordType.objects.create(label='empty', plural_label='empties')
         RecordSchema.objects.create(schema={}, version=1, record_type=record_type)
