@@ -6,31 +6,41 @@ from django.core.urlresolvers import reverse
 from rest_framework import status
 
 from tests.api_test_case import AshlarAPITestCase
-from ashlar.models import Boundary, BoundaryPolygon, RecordSchema, ItemSchema
+from ashlar.models import Boundary, BoundaryPolygon, RecordSchema, RecordType
 
 
 class RecordSchemaViewTestCase(AshlarAPITestCase):
+
+    def setUp(self):
+        super(RecordSchemaViewTestCase, self).setUp()
+        self.record_type = RecordType.objects.create(label='foo', plural_label='foos')
+
     def test_list(self):
         """Basic test to make sure test_list returns the right number of results"""
-        RecordSchema.objects.create(schema={"type": "object"}, version=1, record_type='record')
+        RecordSchema.objects.create(schema={"type": "object"},
+                                    version=1,
+                                    record_type=self.record_type)
         url = reverse('recordschema-list')
         response_data = json.loads(self.client.get(url).content)
         self.assertEqual(response_data['count'], 1)
 
     def test_detail(self):
         """Test that basic fields returned properly"""
-        schema = RecordSchema.objects.create(schema={"type": "object"}, version=1, record_type='foo')
+        schema = RecordSchema.objects.create(schema={"type": "object"},
+                                             version=1,
+                                             record_type=self.record_type)
         url = reverse('recordschema-detail', args=(schema.pk,))
         response_data = json.loads(self.client.get(url).content)
         self.assertEqual(unicode(schema.pk), response_data['uuid'])
         self.assertEqual(schema.schema, response_data['schema'])
-        self.assertEqual(schema.record_type, response_data['record_type'])
+        self.assertEqual(str(schema.record_type.uuid), response_data['record_type'])
 
     def test_create(self):
         """Basic test that schema creation via endpoint works"""
         url = reverse('recordschema-list')
+        # Old style formatting so we don't have to escape all the braces
         schema_data = """{"schema": {"type": "object"},
-                          "record_type": "foo"}"""
+                       "record_type": "%s"}""" % self.record_type.pk
         response = self.client.post(url, schema_data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
         response_data = json.loads(response.content)
@@ -38,9 +48,12 @@ class RecordSchemaViewTestCase(AshlarAPITestCase):
 
     def test_create_new_version(self):
         """Test that creating a new Schema with an existing record_type increments version"""
-        schema = RecordSchema.objects.create(schema={"type": "object"}, version=1, record_type='foo')
+        schema = RecordSchema.objects.create(schema={"type": "object"},
+                                             version=1,
+                                             record_type=self.record_type)
+        # Old style formatting so we don't have to escape all the braces
         schema_data = """{"schema": {"type": "object"},
-                       "record_type": "foo"}"""
+                       "record_type": "%s"}""" % self.record_type.pk
         url = reverse('recordschema-list')
         response = self.client.post(url, schema_data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
@@ -53,7 +66,9 @@ class RecordSchemaViewTestCase(AshlarAPITestCase):
 
     def test_no_update(self):
         """Test that schemas are immutable"""
-        schema = RecordSchema.objects.create(schema={"type": "object"}, version=1, record_type='foo')
+        schema = RecordSchema.objects.create(schema={"type": "object"},
+                                             version=1,
+                                             record_type=self.record_type)
         schema_data = """{"schema": { },
                           "version": 1,
                           "record_type": "foo"}"""
@@ -64,7 +79,9 @@ class RecordSchemaViewTestCase(AshlarAPITestCase):
 
     def test_no_delete(self):
         """Test that deletion doesn't work"""
-        schema = RecordSchema.objects.create(schema={"type": "object"}, version=1, record_type='foo')
+        schema = RecordSchema.objects.create(schema={"type": "object"},
+                                             version=1,
+                                             record_type=self.record_type)
         url = reverse('recordschema-detail', args=(schema.pk,))
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED, response.content)

@@ -8,7 +8,7 @@ from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
 from ashlar.filters import JsonBFilterBackend
-from ashlar.models import RecordSchema
+from ashlar.models import RecordSchema, RecordType
 from ashlar.views import RecordSchemaViewSet
 
 
@@ -29,6 +29,9 @@ class JsonBFilterBackendTestCase(TestCase):
         self.viewset = JsonBFilterViewSet()
         self.factory = APIRequestFactory()
         self.queryset = RecordSchema.objects.all()
+
+        self.id_type = RecordType.objects.create(label='id', plural_label='ids')
+        self.item_type = RecordType.objects.create(label='item', plural_label='items')
 
         item_schema = {
             "$schema": "http://json-schema.org/draft-04/schema#",
@@ -60,10 +63,10 @@ class JsonBFilterBackendTestCase(TestCase):
             }
         }
 
-        schema1 = RecordSchema.objects.create(record_type='id',
+        schema1 = RecordSchema.objects.create(record_type=self.id_type,
                                               version=1,
                                               schema=id_schema)
-        schema2 = RecordSchema.objects.create(record_type='item',
+        schema2 = RecordSchema.objects.create(record_type=self.item_type,
                                               version=1,
                                               schema=item_schema)
 
@@ -73,7 +76,7 @@ class JsonBFilterBackendTestCase(TestCase):
         request = Request(self.factory.get('/foo/', {'jcontains': filter_data}))
         queryset = self.filter_backend.filter_queryset(request, self.queryset, self.viewset)
         self.assertEqual(len(queryset), 1)
-        self.assertEqual(queryset[0].record_type, 'id')
+        self.assertEqual(queryset[0].record_type, self.id_type)
 
     def test_disallow_invalid_json(self):
         """ Raise parse error on invalid json in jcontains request """

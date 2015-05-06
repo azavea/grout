@@ -65,26 +65,23 @@ class Record(AshlarModel):
     objects = models.GeoManager()
 
 
+class RecordType(AshlarModel):
+    """ Store extra information for a given RecordType, associated schemas in RecordSchema """
+    label = models.CharField(max_length=64)
+    plural_label = models.CharField(max_length=64)
+    description = models.TextField(blank=True, null=True)
+
+    def get_current_schema(self):
+        schemas = self.schemas.order_by('-version')
+        return schemas[0] if len(schemas) > 0 else None
+
+
 class RecordSchema(SchemaModel):
     """Schemas for spatiotemporal records"""
-    # TODO: This field may need to be broken out into a separate model so that it can
-    # supported label, slug_label, description, etc.
-    record_type = models.CharField(max_length=50)
+    record_type = models.ForeignKey('RecordType', related_name='schemas')
 
     class Meta(object):
         unique_together = (('record_type', 'version'),)
-
-
-# TODO: This model is currently not very useful and doesn't parallel the way
-# RecordSchemas work. This should be expanded or deleted as we get a better
-# sense of whether / how we want to use subschemas.
-class ItemSchema(SchemaModel):
-    """Subschemas for logical "items" which can be included in Record data"""
-    label = models.CharField(max_length=50)
-    slug = models.CharField(max_length=50, unique=True)
-
-    class Meta(object):
-        unique_together = (('slug', 'version'),)
 
 
 class Boundary(AshlarModel):
