@@ -1,5 +1,6 @@
 # ashlar
 
+[![Build Status](https://travis-ci.org/azavea/ashlar.svg?branch=develop)](https://travis-ci.org/azavea/ashlar)
 
 ## Developing
 

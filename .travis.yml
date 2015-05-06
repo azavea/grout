@@ -1,0 +1,17 @@
+language: python
+python:
+  #- "3.3"  # Fails, add support later!
+  - "2.7"
+
+addons:
+  postgresql: "9.4"
+
+env:
+  - DJANGO_SETTINGS_MODULE='settings_travis'
+
+before_script:
+  - psql -U postgres -c "create extension postgis"
+
+install: pip install -e ./
+
+script: python run_tests.py
