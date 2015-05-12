@@ -106,18 +106,18 @@ class RecordTypeViewTestCase(AshlarAPITestCase):
         url = reverse('recordtype-detail', args=(record_type.pk,))
         response = self.client.get(url)
         response_data = json.loads(response.content)
-        self.assertEqual(response_data['current_schema'], self.schema, response_data)
+        self.assertEqual(response_data['current_schema'], str(record_schema.uuid), response_data)
 
         new_schema = dict(self.schema)
         new_schema['title'] = 'New Schema'
-        record_schema = RecordSchema.objects.create(schema=new_schema,
-                                                    version=2,
-                                                    record_type=record_type)
+        new_record_schema = RecordSchema.objects.create(schema=new_schema,
+                                                        version=2,
+                                                        record_type=record_type)
 
         url = reverse('recordtype-detail', args=(record_type.pk,))
         response = self.client.get(url)
         response_data = json.loads(response.content)
-        self.assertEqual(response_data['current_schema'], new_schema, response_data)
+        self.assertEqual(response_data['current_schema'], str(new_record_schema.uuid), response_data)
 
 
 class BoundaryViewTestCase(AshlarAPITestCase):
