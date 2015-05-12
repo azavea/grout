@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.forms.models import model_to_dict
 
 from rest_framework import fields
 from rest_framework import serializers
@@ -27,7 +28,10 @@ class RecordTypeSerializer(ModelSerializer):
 
     def get_current_schema(self, obj):
         current_schema = obj.get_current_schema()
-        return current_schema.schema if current_schema is not None else None
+        uuid = None
+        if current_schema:
+            uuid = str(current_schema.uuid)
+        return uuid
 
 
 class SchemaSerializer(ModelSerializer):
