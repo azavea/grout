@@ -70,6 +70,7 @@ class RecordType(AshlarModel):
     label = models.CharField(max_length=64)
     plural_label = models.CharField(max_length=64)
     description = models.TextField(blank=True, null=True)
+    active = models.BooleanField(default=True)
 
     def get_current_schema(self):
         schemas = self.schemas.order_by('-version')

@@ -8,7 +8,7 @@ from rest_framework.exceptions import ParseError
 from rest_framework.filters import BaseFilterBackend
 from rest_framework_gis.filterset import GeoFilterSet
 
-from ashlar.models import Boundary, Record
+from ashlar.models import Boundary, Record, RecordType
 
 
 class RecordFilter(GeoFilterSet):
@@ -16,6 +16,13 @@ class RecordFilter(GeoFilterSet):
     class Meta:
         model = Record
         fields = ['data']
+
+
+class RecordTypeFilter(django_filters.FilterSet):
+
+    class Meta:
+        model = RecordType
+        fields = ['active']
 
 
 class BoundaryFilter(GeoFilterSet):

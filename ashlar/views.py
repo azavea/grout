@@ -12,7 +12,7 @@ from ashlar.serializers import (BoundarySerializer,
                                 RecordSerializer,
                                 RecordTypeSerializer,
                                 RecordSchemaSerializer)
-from ashlar.filters import BoundaryFilter, RecordFilter, JsonBFilterBackend
+from ashlar.filters import BoundaryFilter, RecordFilter, RecordTypeFilter, JsonBFilterBackend
 
 
 class RecordViewSet(viewsets.ModelViewSet):
@@ -31,6 +31,7 @@ class RecordViewSet(viewsets.ModelViewSet):
 class RecordTypeViewSet(viewsets.ModelViewSet):
     queryset = RecordType.objects.all()
     serializer_class = RecordTypeSerializer
+    filter_class = RecordTypeFilter
 
 
 class SchemaViewSet(viewsets.GenericViewSet,
