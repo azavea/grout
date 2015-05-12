@@ -87,6 +87,39 @@ class RecordSchemaViewTestCase(AshlarAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED, response.content)
 
 
+class RecordTypeViewTestCase(AshlarAPITestCase):
+
+    def setUp(self):
+        super(RecordTypeViewTestCase, self).setUp()
+
+        self.schema = {
+            "type": "object",
+            "properties": {}
+        }
+
+    def test_record_type_has_current_schema(self):
+        """ Test current schema exists and updates when we create a new schema """
+        record_type = RecordType.objects.create(label='foo', plural_label='foos')
+        record_schema = RecordSchema.objects.create(schema=self.schema,
+                                                    version=1,
+                                                    record_type=record_type)
+        url = reverse('recordtype-detail', args=(record_type.pk,))
+        response = self.client.get(url)
+        response_data = json.loads(response.content)
+        self.assertEqual(response_data['current_schema'], self.schema, response_data)
+
+        new_schema = dict(self.schema)
+        new_schema['title'] = 'New Schema'
+        record_schema = RecordSchema.objects.create(schema=new_schema,
+                                                    version=2,
+                                                    record_type=record_type)
+
+        url = reverse('recordtype-detail', args=(record_type.pk,))
+        response = self.client.get(url)
+        response_data = json.loads(response.content)
+        self.assertEqual(response_data['current_schema'], new_schema, response_data)
+
+
 class BoundaryViewTestCase(AshlarAPITestCase):
 
     def setUp(self):

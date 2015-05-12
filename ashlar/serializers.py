@@ -20,8 +20,14 @@ class RecordSerializer(GeoModelSerializer):
 
 class RecordTypeSerializer(ModelSerializer):
 
+    current_schema = serializers.SerializerMethodField()
+
     class Meta:
         model = RecordType
+
+    def get_current_schema(self, obj):
+        current_schema = obj.get_current_schema()
+        return current_schema.schema if current_schema is not None else None
 
 
 class SchemaSerializer(ModelSerializer):
