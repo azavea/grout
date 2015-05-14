@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='boundary',
             name='label',
-            field=models.CharField(unique=True, max_length=64, validators=[django.core.validators.MinLengthValidator(3)]),
+            field=models.CharField(unique=True, max_length=128, validators=[django.core.validators.MinLengthValidator(3)]),
         ),
     ]

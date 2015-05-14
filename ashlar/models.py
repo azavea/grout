@@ -106,7 +106,7 @@ class Boundary(AshlarModel):
     status = models.CharField(max_length=10,
                               choices=StatusTypes.CHOICES,
                               default=StatusTypes.PENDING)
-    label = models.CharField(max_length=64, unique=True, validators=[MinLengthValidator(3)])
+    label = models.CharField(max_length=128, unique=True, validators=[MinLengthValidator(3)])
     # Store any valid css color string
     color = models.CharField(max_length=64, default='blue')
     display_field = models.CharField(max_length=10, blank=True, null=True)
@@ -147,6 +147,8 @@ class Boundary(AshlarModel):
             if self.errors is None:
                 self.errors = {}
             self.errors['message'] = str(e)
+            # Relabel geography to allow saving a valid shapefile in this namespace
+            self.label = self.label + '_' + str(uuid.uuid4())
             self.status = self.StatusTypes.ERROR
             self.save()
         finally:
