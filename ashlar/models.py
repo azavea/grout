@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.gis.db import models
 from django.contrib.gis.gdal import DataSource as GDALDataSource
 from django_pgjson.fields import JsonBField
+from django.core.validators import MinLengthValidator
 
 import jsonschema
 
@@ -105,7 +106,7 @@ class Boundary(AshlarModel):
     status = models.CharField(max_length=10,
                               choices=StatusTypes.CHOICES,
                               default=StatusTypes.PENDING)
-    label = models.CharField(max_length=64)
+    label = models.CharField(max_length=64, unique=True, validators=[MinLengthValidator(3)])
     # Store any valid css color string
     color = models.CharField(max_length=64, default='blue')
     display_field = models.CharField(max_length=10, blank=True, null=True)

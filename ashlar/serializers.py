@@ -74,7 +74,8 @@ class BoundaryPolygonSerializer(GeoFeatureModelSerializer):
 
 class BoundarySerializer(GeoModelSerializer):
 
-    color = serializers.CharField(max_length=64)
+    label = serializers.CharField(max_length=128, allow_blank=False)
+    color = serializers.CharField(max_length=64, required=False)
     display_field = serializers.CharField(max_length=10, allow_blank=True, required=False)
     data_fields = JsonBField(read_only=True, allow_null=True)
     errors = JsonBField(read_only=True, allow_null=True)

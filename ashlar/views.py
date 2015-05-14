@@ -1,6 +1,8 @@
 from collections import OrderedDict
 
-from rest_framework import viewsets, mixins
+from django.db import IntegrityError
+
+from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import detail_route
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
@@ -70,6 +72,16 @@ class BoundaryViewSet(viewsets.ModelViewSet):
     queryset = Boundary.objects.all()
     serializer_class = BoundarySerializer
     filter_class = BoundaryFilter
+
+    def create(self, request, *args, **kwargs):
+        try:
+            super(BoundaryViewSet, self).create(request, *args, **kwargs)
+        except IntegrityError:
+            return Response({'error': 'uniqueness constraint violation'}, status.HTTP_409_CONFLICT)
+
+    def perform_create(self, serializer):
+        serializer.save(label=self.request.data.get('label'),
+                        source_file=self.request.data.get('source_file'))
 
     @detail_route(methods=['get'])
     def geojson(self, request, pk=None):
