@@ -74,14 +74,13 @@ class BoundaryViewSet(viewsets.ModelViewSet):
     filter_class = BoundaryFilter
 
     def create(self, request, *args, **kwargs):
+        """Overwritten to allow use of semantically important/appropriate status codes for
+        informing users about the type of error they've encountered
+        """
         try:
-            super(BoundaryViewSet, self).create(request, *args, **kwargs)
+            return super(BoundaryViewSet, self).create(request, *args, **kwargs)
         except IntegrityError:
             return Response({'error': 'uniqueness constraint violation'}, status.HTTP_409_CONFLICT)
-
-    def perform_create(self, serializer):
-        serializer.save(label=self.request.data.get('label'),
-                        source_file=self.request.data.get('source_file'))
 
     @detail_route(methods=['get'])
     def geojson(self, request, pk=None):
