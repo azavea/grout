@@ -1,15 +1,16 @@
 import json
 
 from django.test import TestCase
+from django.utils import timezone
 
 from rest_framework import viewsets
 from rest_framework.exceptions import ParseError
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
-from ashlar.filters import JsonBFilterBackend
-from ashlar.models import RecordSchema, RecordType
-from ashlar.views import RecordSchemaViewSet
+from ashlar.filters import JsonBFilterBackend, RecordFilter
+from ashlar.models import Record, RecordSchema, RecordType
+from ashlar.views import RecordViewSet, RecordSchemaViewSet
 
 
 class JsonBFilterViewSet(viewsets.ModelViewSet):
@@ -92,3 +93,69 @@ class JsonBFilterBackendTestCase(TestCase):
         with self.assertRaises(ParseError):
             queryset = self.filter_backend.filter_queryset(request, self.queryset, self.viewset)
 
+
+class RecordQueryTestCase(TestCase):
+    """ Test Record queries """
+
+    def setUp(self):
+        self.filter_backend = RecordFilter()
+        self.viewset = RecordViewSet()
+        self.factory = APIRequestFactory()
+        self.queryset = Record.objects.all()
+
+        self.id_type = RecordType.objects.create(label='id', plural_label='ids')
+        self.id_schema = RecordSchema.objects.create(
+            record_type=self.id_type,
+            version=1,
+            schema={}
+        )
+        self.id_record_1 = Record.objects.create(
+            occurred_from=timezone.now(),
+            occurred_to=timezone.now(),
+            label='id_record_1 label',
+            slug='id_record_1 slug',
+            geom='POINT (0 0)',
+            schema=self.id_schema,
+            data={}
+        )
+        self.id_record_2 = Record.objects.create(
+            occurred_from=timezone.now(),
+            occurred_to=timezone.now(),
+            label='id_record_2 label',
+            slug='id_record_2 slug',
+            geom='POINT (0 0)',
+            schema=self.id_schema,
+            data={}
+        )
+
+        self.item_type = RecordType.objects.create(label='item', plural_label='items')
+        self.item_schema = RecordSchema.objects.create(
+            record_type=self.item_type,
+            version=1,
+            schema={}
+        )
+        self.item_record_1 = Record.objects.create(
+            occurred_from=timezone.now(),
+            occurred_to=timezone.now(),
+            label='item_record_1 label',
+            slug='item_record_1 slug',
+            geom='POINT (0 0)',
+            schema=self.item_schema,
+            data={}
+        )
+        self.item_record_2 = Record.objects.create(
+            occurred_from=timezone.now(),
+            occurred_to=timezone.now(),
+            label='item_record_2 label',
+            slug='item_record_2 slug',
+            geom='POINT (0 0)',
+            schema=self.item_schema,
+            data={}
+        )
+
+
+    def test_record_type_filter(self):
+        """ Test filtering by record type """
+        queryset = self.filter_backend.filter_record_type(self.queryset, self.id_type.uuid)
+        self.assertEqual(len(queryset), 2)
+        self.assertEqual(queryset[0].schema, self.id_schema)

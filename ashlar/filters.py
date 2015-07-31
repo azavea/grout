@@ -8,14 +8,24 @@ from rest_framework.exceptions import ParseError
 from rest_framework.filters import BaseFilterBackend
 from rest_framework_gis.filterset import GeoFilterSet
 
-from ashlar.models import Boundary, Record, RecordType
+from ashlar.models import Boundary, Record, RecordSchema, RecordType
 
 
 class RecordFilter(GeoFilterSet):
 
+    record_type = django_filters.MethodFilter(name='record_type', action='filter_record_type')
+
+    def filter_record_type(self, queryset, value):
+        """ Method filter for records having a desired record type (uuid)
+
+        e.g. /api/records/?record_type=44a51b83-470f-4e3d-b71b-e3770ec79772
+
+        """
+        return queryset.filter(schema__record_type=value)
+
     class Meta:
         model = Record
-        fields = ['data']
+        fields = ['data', 'record_type']
 
 
 class RecordTypeFilter(django_filters.FilterSet):
