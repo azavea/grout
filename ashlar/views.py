@@ -8,13 +8,34 @@ from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework_gis.filters import InBBoxFilter
 
-from ashlar.models import Boundary, Record, RecordType, RecordSchema
+from ashlar.models import (Boundary,
+                           BoundaryPolygon,
+                           Record,
+                           RecordType,
+                           RecordSchema)
 from ashlar.serializers import (BoundarySerializer,
                                 BoundaryPolygonSerializer,
                                 RecordSerializer,
                                 RecordTypeSerializer,
                                 RecordSchemaSerializer)
-from ashlar.filters import BoundaryFilter, RecordFilter, RecordTypeFilter, JsonBFilterBackend
+from ashlar.filters import (BoundaryFilter,
+                            BoundaryPolygonFilter,
+                            JsonBFilterBackend,
+                            RecordFilter,
+                            RecordTypeFilter)
+
+
+class BoundaryPolygonViewSet(viewsets.ModelViewSet):
+
+    queryset = BoundaryPolygon.objects.all()
+    serializer_class = BoundaryPolygonSerializer
+    filter_class = BoundaryPolygonFilter
+    bbox_filter_field = 'geom'
+    jsonb_filter_field = 'data'
+    jsonb_filters = (
+        ('jcontains', False),
+    )
+    filter_backends = (InBBoxFilter, JsonBFilterBackend, DjangoFilterBackend)
 
 
 class RecordViewSet(viewsets.ModelViewSet):

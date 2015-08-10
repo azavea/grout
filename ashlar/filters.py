@@ -8,7 +8,7 @@ from rest_framework.exceptions import ParseError
 from rest_framework.filters import BaseFilterBackend
 from rest_framework_gis.filterset import GeoFilterSet
 
-from ashlar.models import Boundary, Record, RecordSchema, RecordType
+from ashlar.models import Boundary, BoundaryPolygon, Record, RecordSchema, RecordType
 
 
 class RecordFilter(GeoFilterSet):
@@ -54,6 +54,23 @@ class BoundaryFilter(GeoFilterSet):
     class Meta:
         model = Boundary
         fields = ['status']
+
+class BoundaryPolygonFilter(GeoFilterSet):
+
+    boundary = django_filters.MethodFilter(name='boundary', action='filter_boundary')
+
+    def filter_boundary(self, queryset, value):
+        """ Method filter for boundary polygons having a desired boundary (uuid)
+
+        e.g. /api/boundarypolygons/?boundary=44a51b83-470f-4e3d-b71b-e3770ec79772
+
+        """
+        return queryset.filter(boundary=value)
+
+    class Meta:
+        model = BoundaryPolygon
+        fields = ['data', 'boundary']
+
 
 
 class JsonBFilterBackend(BaseFilterBackend):

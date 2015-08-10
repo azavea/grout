@@ -8,9 +8,9 @@ from rest_framework.exceptions import ParseError
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
-from ashlar.filters import JsonBFilterBackend, RecordFilter
-from ashlar.models import Record, RecordSchema, RecordType
-from ashlar.views import RecordViewSet, RecordSchemaViewSet
+from ashlar.filters import BoundaryPolygonFilter, JsonBFilterBackend, RecordFilter
+from ashlar.models import Boundary, BoundaryPolygon, Record, RecordSchema, RecordType
+from ashlar.views import BoundaryPolygonViewSet, RecordViewSet, RecordSchemaViewSet
 
 
 class JsonBFilterViewSet(viewsets.ModelViewSet):
@@ -159,3 +159,36 @@ class RecordQueryTestCase(TestCase):
         queryset = self.filter_backend.filter_record_type(self.queryset, self.id_type.uuid)
         self.assertEqual(len(queryset), 2)
         self.assertEqual(queryset[0].schema, self.id_schema)
+
+
+class BoundaryPolygonQueryTestCase(TestCase):
+    """ Test BoundaryPolygon queries """
+
+    def setUp(self):
+        self.filter_backend = BoundaryPolygonFilter()
+        self.viewset = BoundaryPolygonViewSet()
+        self.factory = APIRequestFactory()
+        self.queryset = BoundaryPolygon.objects.all()
+
+        self.boundary_1 = Boundary.objects.create(label='boundary_1')
+        self.boundary_2 = Boundary.objects.create(label='boundary_2')
+
+        self.boundary_polygon_1 = BoundaryPolygon.objects.create(
+            geom=('MULTIPOLYGON (((30 20, 45 40, 10 40, 30 20)),'
+                  '((15 5, 40 10, 10 20, 5 10, 15 5)))'),
+            boundary=self.boundary_1,
+            data={}
+        )
+        self.boundary_polygon_1 = BoundaryPolygon.objects.create(
+            geom=('MULTIPOLYGON (((40 40, 20 45, 45 30, 40 40)),'
+                  '((20 35, 10 30, 10 10, 30 5, 45 20, 20 35),'
+                  '(30 20, 20 15, 20 25, 30 20)))'),
+            boundary=self.boundary_2,
+            data={}
+        )
+
+    def test_boundary_filter(self):
+        """ Test filtering by boundary """
+        queryset = self.filter_backend.filter_boundary(self.queryset, self.boundary_1.uuid)
+        self.assertEqual(len(queryset), 1)
+        self.assertEqual(queryset[0].boundary, self.boundary_1)
