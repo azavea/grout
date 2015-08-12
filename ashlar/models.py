@@ -65,6 +65,9 @@ class Record(AshlarModel):
 
     objects = models.GeoManager()
 
+    class Meta(object):
+        ordering = ('-created',)
+
 
 class RecordType(AshlarModel):
     """ Store extra information for a given RecordType, associated schemas in RecordSchema """
