@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 ('label', models.CharField(max_length=64)),
                 ('errors', django_pgjson.fields.JsonBField(null=True, blank=True)),
                 ('source_file', models.FileField(upload_to=b'boundaries/%Y/%m/%d')),
-                ('geom', django.contrib.gis.db.models.fields.MultiPolygonField(srid=3857, null=True, blank=True)),
+                ('geom', django.contrib.gis.db.models.fields.MultiPolygonField(srid=4326, null=True, blank=True)),
             ],
             options={
                 'abstract': False,
