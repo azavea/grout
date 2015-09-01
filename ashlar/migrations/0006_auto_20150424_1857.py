@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('data', django_pgjson.fields.JsonBField()),
-                ('geom', django.contrib.gis.db.models.fields.MultiPolygonField(srid=3857)),
+                ('geom', django.contrib.gis.db.models.fields.MultiPolygonField(srid=4326)),
             ],
             options={
                 'abstract': False,
