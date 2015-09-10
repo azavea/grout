@@ -112,8 +112,6 @@ class RecordQueryTestCase(TestCase):
         self.id_record_1 = Record.objects.create(
             occurred_from=timezone.now(),
             occurred_to=timezone.now(),
-            label='id_record_1 label',
-            slug='id_record_1 slug',
             geom='POINT (0 0)',
             schema=self.id_schema,
             data={}
@@ -121,8 +119,6 @@ class RecordQueryTestCase(TestCase):
         self.id_record_2 = Record.objects.create(
             occurred_from=timezone.now(),
             occurred_to=timezone.now(),
-            label='id_record_2 label',
-            slug='id_record_2 slug',
             geom='POINT (0 0)',
             schema=self.id_schema,
             data={}
@@ -137,8 +133,6 @@ class RecordQueryTestCase(TestCase):
         self.item_record_1 = Record.objects.create(
             occurred_from=timezone.now(),
             occurred_to=timezone.now(),
-            label='item_record_1 label',
-            slug='item_record_1 slug',
             geom='POINT (0 0)',
             schema=self.item_schema,
             data={}
@@ -146,8 +140,6 @@ class RecordQueryTestCase(TestCase):
         self.item_record_2 = Record.objects.create(
             occurred_from=timezone.now(),
             occurred_to=timezone.now(),
-            label='item_record_2 label',
-            slug='item_record_2 slug',
             geom='POINT (0 0)',
             schema=self.item_schema,
             data={}
