@@ -56,8 +56,6 @@ class Record(AshlarModel):
     """Spatiotemporal records -- e.g. Loch Ness Monster sightings, crime events, etc."""
     occurred_from = models.DateTimeField()
     occurred_to = models.DateTimeField()
-    label = models.CharField(max_length=50)  # Human-readable
-    slug = models.CharField(max_length=50)
 
     geom = models.PointField(srid=settings.ASHLAR['SRID'])
     schema = models.ForeignKey('RecordSchema')
