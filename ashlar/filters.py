@@ -1,6 +1,7 @@
 import json
 import django_filters
 
+from django.contrib.gis.geos import GEOSGeometry, GEOSException
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q
 
@@ -54,6 +55,25 @@ class BoundaryFilter(GeoFilterSet):
     class Meta:
         model = Boundary
         fields = ['status']
+
+
+class UserBoundsFilter(GeoFilterSet):
+
+    polygon = django_filters.MethodFilter(name='polygon', action='filter_polygon')
+
+    def filter_polygon(self, queryset, geojson):
+        """ Method filter for arbitrary polygon, sent in as geojson.
+        """
+        poly = GEOSGeometry(geojson)
+        if poly.valid:
+            return queryset.filter(geom__intersects=poly)
+        else:
+            raise ParseError('Input polygon must be valid GeoJSON: ' + poly.valid_reason)
+
+    class Meta:
+        model = Record
+        fields = ['data', 'geom']
+
 
 class BoundaryPolygonFilter(GeoFilterSet):
 
