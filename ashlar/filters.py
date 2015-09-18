@@ -1,6 +1,7 @@
 import json
 import django_filters
 
+from django.contrib.gis.geos import GEOSGeometry, GEOSException
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q
 
@@ -14,6 +15,16 @@ from ashlar.models import Boundary, BoundaryPolygon, Record, RecordSchema, Recor
 class RecordFilter(GeoFilterSet):
 
     record_type = django_filters.MethodFilter(name='record_type', action='filter_record_type')
+    polygon = django_filters.MethodFilter(name='polygon', action='filter_polygon')
+
+    def filter_polygon(self, queryset, geojson):
+        """ Method filter for arbitrary polygon, sent in as geojson.
+        """
+        poly = GEOSGeometry(geojson)
+        if poly.valid:
+            return queryset.filter(geom__intersects=poly)
+        else:
+            raise ParseError('Input polygon must be valid GeoJSON: ' + poly.valid_reason)
 
     def filter_record_type(self, queryset, value):
         """ Method filter for records having a desired record type (uuid)
@@ -25,7 +36,7 @@ class RecordFilter(GeoFilterSet):
 
     class Meta:
         model = Record
-        fields = ['data', 'record_type']
+        fields = ['data', 'record_type', 'geom']
 
 
 class RecordTypeFilter(django_filters.FilterSet):
@@ -54,6 +65,7 @@ class BoundaryFilter(GeoFilterSet):
     class Meta:
         model = Boundary
         fields = ['status']
+
 
 class BoundaryPolygonFilter(GeoFilterSet):
 

@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
 
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import detail_route
@@ -49,6 +49,24 @@ class RecordViewSet(viewsets.ModelViewSet):
         ('jcontains', False),
     )
     filter_backends = (InBBoxFilter, JsonBFilterBackend, DjangoFilterBackend)
+
+    def list(self, request, *args, **kwargs):
+        # respond to `query` param with the SQL for the query, instead of the query results
+        if 'query' in request.GET:
+            qryset = self.get_queryset()
+            # apply the filters
+            for backend in list(self.filter_backends):
+                qryset = backend().filter_queryset(request, qryset, self)
+
+            cursor = connection.cursor().cursor
+            sql, params = qryset.query.sql_with_params()
+            # get properly escaped string representation of the query
+            qrystr = cursor.mogrify(sql, params)
+            cursor.close()
+
+            return Response({'query': qrystr})
+        else:
+            return super(RecordViewSet, self).list(self, request, *args, **kwargs)
 
 
 class RecordTypeViewSet(viewsets.ModelViewSet):
