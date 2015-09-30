@@ -22,7 +22,8 @@ from ashlar.filters import (BoundaryFilter,
                             BoundaryPolygonFilter,
                             JsonBFilterBackend,
                             RecordFilter,
-                            RecordTypeFilter)
+                            RecordTypeFilter,
+                            DateRangeFilterBackend)
 
 
 class BoundaryPolygonViewSet(viewsets.ModelViewSet):
@@ -47,8 +48,11 @@ class RecordViewSet(viewsets.ModelViewSet):
     jsonb_filter_field = 'data'
     jsonb_filters = (
         ('jcontains', False),
+        ('exact', False),
+        ('at', False),
     )
-    filter_backends = (InBBoxFilter, JsonBFilterBackend, DjangoFilterBackend)
+    filter_backends = (InBBoxFilter, JsonBFilterBackend,
+                       DjangoFilterBackend, DateRangeFilterBackend)
 
     def list(self, request, *args, **kwargs):
         # respond to `query` param with the SQL for the query, instead of the query results

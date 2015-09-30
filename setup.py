@@ -6,7 +6,7 @@ tests_require = []
 
 setup(
     name='ashlar',
-    version='0.0.1',
+    version='0.0.2',
     description='Define and validate schemas for metadata for geotemporal event records',
     author='Azavea, Inc.',
     author_email='info@azavea.com',
@@ -21,6 +21,7 @@ setup(
         'django-pgjson >=0.2.3',
         'psycopg2 >=2.6',
         'django-extensions >=1.5.2',
+        'python-dateutil >=2.4.2',
         'PyYAML >=3.11'
     ],
     extras_require={

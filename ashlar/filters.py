@@ -2,6 +2,8 @@ import json
 import django_filters
 
 from django.contrib.gis.geos import GEOSGeometry, GEOSException
+from dateutil.parser import parse
+
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q
 
@@ -9,7 +11,8 @@ from rest_framework.exceptions import ParseError
 from rest_framework.filters import BaseFilterBackend
 from rest_framework_gis.filterset import GeoFilterSet
 
-from ashlar.models import Boundary, BoundaryPolygon, Record, RecordSchema, RecordType
+from ashlar.models import Boundary, BoundaryPolygon, Record, RecordType
+from ashlar.exceptions import QueryParameterException
 
 
 class RecordFilter(GeoFilterSet):
@@ -84,6 +87,59 @@ class BoundaryPolygonFilter(GeoFilterSet):
         fields = ['data', 'boundary']
 
 
+class DateRangeFilterBackend(BaseFilterBackend):
+    """Used to filter querysets based on a given START_FIELD and END_FIELD
+
+    NOTE: This filter must be inherited from in order to be used because
+    1. its Meta class must be set with a model and list of fields
+    2. you likely want to override START_FIELD/END_FIELD
+
+    This is a simple filter which takes two (optional) limits and returns all records
+    whose 'occurred_from' field falls on or between the maximum and minimum provided.
+    If only a maximum or a minimum are provided, the MIN_DATETIME or MAX_DATETIME will
+    be used instead.
+
+    An example [truncated] query: /api/records/?occurred_min=1901-01-01T00:00:00+00:00Z
+    """
+
+    MIN_DATETIME = '1901-01-01T00:00:00+00:00'
+    MAX_DATETIME = '9999-12-31T23:59:59.999999+00:00'
+
+    FIELD = 'occurred_from'
+
+    def filter_queryset(self, request, queryset, view):
+        """Filter records by date
+
+        Arguments
+        :param request: django rest framework request instance
+        :param queryset: queryset to apply filter to
+        :param view: view that this filter is being used by
+
+        QUERY PARAMS
+        :param valid_from: ISO 8601 timestamp
+        :param valid_to: ISO 8601 timestamp
+        """
+        occurred_min = 'occurred_min'
+        occurred_max = 'occurred_max'
+        err_msg = 'must be ISO 8601 formatted with timezone information. Please check that the URL is properly encoded.'
+        if occurred_min not in request.query_params and occurred_max not in request.query_params:
+            return queryset
+
+        try:
+            min_date = parse(request.query_params.get(occurred_min, self.MIN_DATETIME))
+        except:
+            raise QueryParameterException(occurred_min, err_msg)
+
+        try:
+            max_date = parse(request.query_params.get(occurred_max, self.MAX_DATETIME))
+        except:
+            raise QueryParameterException(occurred_max, err_msg)
+
+        if not min_date.tzinfo or not max_date.tzinfo:
+            raise QueryParameterException('datetimes', err_msg)
+
+        return queryset.filter(occurred_from__gte=min_date, occurred_from__lte=max_date)
+
 
 class JsonBFilterBackend(BaseFilterBackend):
     """ Generic configurable filter for JsonBField
@@ -102,6 +158,7 @@ class JsonBFilterBackend(BaseFilterBackend):
         ('jhas', True),
     )
 
+    EXAMPLE USAGE: /api/records/?jcontains={"Site": {"DPWH province name": "CAGAYAN"}}
     """
     def filter_queryset(self, request, queryset, view):
         """ Filter by configured jsonb_filters on jsonb_filter_field """
