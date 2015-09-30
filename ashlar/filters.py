@@ -94,19 +94,12 @@ class DateRangeFilterBackend(BaseFilterBackend):
     1. its Meta class must be set with a model and list of fields
     2. you likely want to override START_FIELD/END_FIELD
 
-    How this filter works:
-    If any portion of the 'valid' datetime ranges overlap, the object is returned;
-    however, the 'end time' is not inclusive, so if the 'valid start period datetime'
-    is equal to the query value 'valid_to' that mission will be excluded.
+    This is a simple filter which takes two (optional) limits and returns all records
+    whose 'occurred_from' field falls on or between the maximum and minimum provided.
+    If only a maximum or a minimum are provided, the MIN_DATETIME or MAX_DATETIME will
+    be used instead.
 
-    If only 'valid_from' or 'valid_to' is provided this operates similar to > or <
-    e.g. 'valid_from=1901-01-01T00:00:00+00:00' will return all missions where the mission's
-    valid period is greater than 1901-01-01T00:00:00+00:00.
-
-    If both 'valid_from' and 'valid_to' are the same datetime then missions that include
-    that datetime in its valid period are returned.
-
-    For greater explanation, see the diagrams/tests for MissionFilter in missions/tests.py
+    An example [truncated] query: /api/records/?occurred_min=1901-01-01T00:00:00+00:00Z
     """
 
     MIN_DATETIME = '1901-01-01T00:00:00+00:00'
