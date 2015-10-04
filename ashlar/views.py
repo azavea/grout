@@ -33,9 +33,6 @@ class BoundaryPolygonViewSet(viewsets.ModelViewSet):
     filter_class = BoundaryPolygonFilter
     bbox_filter_field = 'geom'
     jsonb_filter_field = 'data'
-    jsonb_filters = (
-        ('jcontains', False),
-    )
     filter_backends = (InBBoxFilter, JsonBFilterBackend, DjangoFilterBackend)
 
 
@@ -46,11 +43,6 @@ class RecordViewSet(viewsets.ModelViewSet):
     filter_class = RecordFilter
     bbox_filter_field = 'geom'
     jsonb_filter_field = 'data'
-    jsonb_filters = (
-        ('jcontains', False),
-        ('exact', False),
-        ('at', False),
-    )
     filter_backends = (InBBoxFilter, JsonBFilterBackend,
                        DjangoFilterBackend, DateRangeFilterBackend)
 
@@ -90,9 +82,6 @@ class RecordSchemaViewSet(SchemaViewSet):
     queryset = RecordSchema.objects.all()
     serializer_class = RecordSchemaSerializer
     jsonb_filter_field = 'schema'
-    jsonb_filters = (
-        ('jcontains', False),
-    )
     filter_backends = (JsonBFilterBackend, DjangoFilterBackend)
 
     # N.B. The DRF documentation is misleading; if you include named parameters as
