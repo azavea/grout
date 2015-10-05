@@ -73,25 +73,10 @@ class JsonBFilterBackendTestCase(TestCase):
 
     def test_valid_jcontains_filter(self):
         """ Test filtering on jsonb keys """
-        filter_data = json.dumps({ 'title': 'Id' })
-        request = Request(self.factory.get('/foo/', {'jcontains': filter_data}))
+        request = Request(self.factory.get('/foo/?jsonb={"title": {"_rule_type": "containment", "contains": ["Id"]}}'))
         queryset = self.filter_backend.filter_queryset(request, self.queryset, self.viewset)
         self.assertEqual(len(queryset), 1)
         self.assertEqual(queryset[0].record_type, self.id_type)
-
-    def test_disallow_invalid_json(self):
-        """ Raise parse error on invalid json in jcontains request """
-        filter_data = '{"test": }'
-        request = Request(self.factory.get('/foo/', {'jcontains': filter_data}))
-        with self.assertRaises(ParseError):
-            queryset = self.filter_backend.filter_queryset(request, self.queryset, self.viewset)
-
-    def test_ensure_allow_scalar_false_raises_error(self):
-        """ A scalar value in jcontains filter should raise ParseError """
-        filter_data = 3
-        request = Request(self.factory.get('/foo/', {'jcontains': filter_data}))
-        with self.assertRaises(ParseError):
-            queryset = self.filter_backend.filter_queryset(request, self.queryset, self.viewset)
 
 
 class RecordQueryTestCase(TestCase):
