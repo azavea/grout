@@ -12,6 +12,6 @@ env:
 before_script:
   - psql -U postgres -c "create extension postgis"
 
-install: pip install --allow-external --process-dependency-links djsonb -e ./
+install: pip install --allow-external djsonb --process-dependency-links -e ./
 
 script: python run_tests.py
