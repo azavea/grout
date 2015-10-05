@@ -5,8 +5,9 @@
 ## Developing
 
 **Ashlar is under heavy development in tandem with
-[DRIVER](https://github.com/WorldBank-Transport/DRIVER); currently the best way to develop
-on Ashlar is to set up a DRIVER VM and use that.**
+[DRIVER](https://github.com/WorldBank-Transport/DRIVER) and
+[djsonb](https://github.com/azavea/djsonb); currently the best way
+to develop on Ashlar is to set up a DRIVER VM and use that.**
 
 
 ## Testing

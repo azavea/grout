@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-import django_pgjson.fields
+import djsonb.fields
 import django.contrib.gis.db.models.fields
 import uuid
 
@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('version', models.IntegerField()),
-                ('schema', django_pgjson.fields.JsonBField()),
+                ('schema', djsonb.fields.JsonBField()),
                 ('label', models.CharField(max_length=50)),
                 ('slug', models.CharField(unique=True, max_length=50)),
             ],
@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
                 ('label', models.CharField(max_length=50)),
                 ('slug', models.CharField(max_length=50)),
                 ('geom', django.contrib.gis.db.models.fields.PointField(srid=4326)),
-                ('data', django_pgjson.fields.JsonBField()),
+                ('data', djsonb.fields.JsonBField()),
             ],
             options={
                 'abstract': False,
@@ -49,7 +49,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('version', models.IntegerField()),
-                ('schema', django_pgjson.fields.JsonBField()),
+                ('schema', djsonb.fields.JsonBField()),
                 ('record_type', models.CharField(max_length=50)),
             ],
         ),
