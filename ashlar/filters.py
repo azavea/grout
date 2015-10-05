@@ -147,17 +147,8 @@ class JsonBFilterBackend(BaseFilterBackend):
     Requires the following properties, configured on the view using this filter backend:
 
     jsonb_filter_field: The name of the django model field to filter against
-
-    jsonb_filters: An iterable of tuples where each tuple takes the format:
-    (lookup_field_name, allow_scalars)
-    lookup_field_name: The lookup name of an available custom jsonb filter
-    allow_scalars: True if the filter takes bool/string/int, otherwise False
-    if array/object required
-    e.g.
-    (
-        ('jcontains', False),
-        ('jhas', True),
-    )
+    NOTE: Currently, there can be at most one jsonb field to filter over. parametrizing
+    the fieldnames will allow indefinitely many filtered columns.
 
     EXAMPLE USAGE: /api/records/?jcontains={"Site": {"DPWH province name": "CAGAYAN"}}
     """
