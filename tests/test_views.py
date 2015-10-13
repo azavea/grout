@@ -117,6 +117,30 @@ class RecordTypeViewTestCase(AshlarAPITestCase):
         url = reverse('recordtype-detail', args=(record_type.pk,))
         response = self.client.get(url)
         response_data = json.loads(response.content)
+        self.assertEqual(response_data['current_schema'],
+                         str(new_record_schema.uuid),
+                         response_data)
+
+    def test_record_count(self):
+        record_type = RecordType.objects.create(label='foo', plural_label='foos')
+        record_schema = RecordSchema.objects.create(schema=self.schema,
+                                                    version=1,
+                                                    record_type=record_type)
+        url = reverse('recordtype-detail', args=(record_type.pk,))
+        response = self.client.get(url)
+        response_data = json.loads(response.content)
+        self.assertEqual(response_data['current_schema'], str(record_schema.uuid), response_data)
+
+        new_schema = dict(self.schema)
+        new_schema['title'] = 'New Schema'
+        new_record_schema = RecordSchema.objects.create(schema=new_schema,
+                                                        version=2,
+                                                        record_type=record_type)
+
+        url = reverse('recordtype-detail', args=(record_type.pk,))
+        print('url!', url)
+        response = self.client.get(url)
+        response_data = json.loads(response.content)
         self.assertEqual(response_data['current_schema'], str(new_record_schema.uuid), response_data)
 
 

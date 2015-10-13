@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from datetime import datetime, timedelta
 
 from django.db import IntegrityError, connection
 
@@ -73,6 +74,35 @@ class RecordTypeViewSet(viewsets.ModelViewSet):
     serializer_class = RecordTypeSerializer
     filter_class = RecordTypeFilter
     pagination_class = OptionalLimitOffsetPagination
+
+    @detail_route(methods=['get'])
+    def recent_counts(self, request, pk=None):
+        """ Return the recent record counts for a given a record type
+        where recent = 30, 90, 365 days
+        """
+        record_type = RecordType.objects.get(pk=pk)
+        now = datetime.now()
+        durations = {
+            'month': 30,
+            'quarter': 90,
+            'year': 365
+        }
+
+        counts = {
+            'month': 0,
+            'quarter': 0,
+            'year': 0
+        }
+
+        for schema in record_type.schemas.all():
+            for label, days in durations.items():
+                earliest = now - timedelta(days=days)
+                count = (schema.record_set
+                         .filter(occurred_from__lte=now, occurred_from__gte=earliest).count())
+                counts[label] += count
+
+        # Construct JSON representation of `counts` for the response
+        return Response(counts)
 
 
 class SchemaViewSet(viewsets.GenericViewSet,
