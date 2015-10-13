@@ -85,7 +85,6 @@ class RecordTypeViewSet(viewsets.ModelViewSet):
         }
 
         counts = {
-            'plural': record_type.plural_label,
             'month': 0,
             'quarter': 0,
             'year': 0
