@@ -25,12 +25,15 @@ from ashlar.filters import (BoundaryFilter,
                             RecordTypeFilter,
                             DateRangeFilterBackend)
 
+from ashlar.pagination import OptionalLimitOffsetPagination
+
 
 class BoundaryPolygonViewSet(viewsets.ModelViewSet):
 
     queryset = BoundaryPolygon.objects.all()
     serializer_class = BoundaryPolygonSerializer
     filter_class = BoundaryPolygonFilter
+    pagination_class = OptionalLimitOffsetPagination
     bbox_filter_field = 'geom'
     jsonb_filter_field = 'data'
     filter_backends = (InBBoxFilter, JsonBFilterBackend, DjangoFilterBackend)
@@ -69,6 +72,7 @@ class RecordTypeViewSet(viewsets.ModelViewSet):
     queryset = RecordType.objects.all()
     serializer_class = RecordTypeSerializer
     filter_class = RecordTypeFilter
+    pagination_class = OptionalLimitOffsetPagination
 
 
 class SchemaViewSet(viewsets.GenericViewSet,
@@ -76,6 +80,7 @@ class SchemaViewSet(viewsets.GenericViewSet,
                     mixins.CreateModelMixin,
                     mixins.RetrieveModelMixin):  # Schemas are immutable
     """Base ViewSet for viewsets displaying subclasses of SchemaModel"""
+    pagination_class = OptionalLimitOffsetPagination
 
 
 class RecordSchemaViewSet(SchemaViewSet):
@@ -104,6 +109,7 @@ class BoundaryViewSet(viewsets.ModelViewSet):
     queryset = Boundary.objects.all()
     serializer_class = BoundarySerializer
     filter_class = BoundaryFilter
+    pagination_class = OptionalLimitOffsetPagination
 
     def create(self, request, *args, **kwargs):
         """Overwritten to allow use of semantically important/appropriate status codes for
