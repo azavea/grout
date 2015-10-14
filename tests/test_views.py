@@ -1,12 +1,39 @@
 import os
 import json
+from datetime import datetime
 
 from django.core.urlresolvers import reverse
 
 from rest_framework import status
 
 from tests.api_test_case import AshlarAPITestCase
-from ashlar.models import Boundary, BoundaryPolygon, RecordSchema, RecordType
+from ashlar.models import Boundary, RecordSchema, RecordType, Record
+
+
+class RecordViewTestCase(AshlarAPITestCase):
+
+    def setUp(self):
+        super(RecordViewTestCase, self).setUp()
+        self.now = datetime.now()
+        self.tod = self.now.hour
+        self.dow = self.now.isoweekday() + 1  # 1 added here to handle differences in indexing
+
+        self.record_type = RecordType.objects.create(label='foo', plural_label='foos')
+        self.schema = RecordSchema.objects.create(schema={"type": "object"},
+                                                  version=1,
+                                                  record_type=self.record_type)
+        self.record = Record.objects.create(occurred_from=self.now,
+                                            occurred_to=self.now,
+                                            geom='POINT (0 0)',
+                                            schema=self.schema)
+
+    def test_toddow(self):
+        url = '/api/records/toddow/?record_type={}'.format(str(self.record_type.uuid))
+        response_data = json.loads(self.client.get(url).content)[0]  # only one record to count
+
+        self.assertEqual(response_data['count'], 1)
+        self.assertEqual(response_data['tod'], self.tod)
+        self.assertEqual(response_data['dow'], self.dow)
 
 
 class RecordSchemaViewTestCase(AshlarAPITestCase):
