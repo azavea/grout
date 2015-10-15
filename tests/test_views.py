@@ -1,12 +1,61 @@
 import os
 import json
+from datetime import datetime, timedelta
 
 from django.core.urlresolvers import reverse
 
 from rest_framework import status
 
 from tests.api_test_case import AshlarAPITestCase
-from ashlar.models import Boundary, BoundaryPolygon, RecordSchema, RecordType
+from ashlar.models import Boundary, RecordSchema, RecordType, Record
+
+
+class RecordViewTestCase(AshlarAPITestCase):
+
+    def setUp(self):
+        super(RecordViewTestCase, self).setUp()
+        self.now = datetime.now()
+        self.then = self.now - timedelta(days=10)
+        self.laterThanThen = self.now - timedelta(days=9)
+
+        self.tod = self.now.hour
+        self.dow = self.now.isoweekday() + 1  # 1 added here to handle differences in indexing
+
+        self.record_type = RecordType.objects.create(label='foo', plural_label='foos')
+        self.schema = RecordSchema.objects.create(schema={"type": "object"},
+                                                  version=1,
+                                                  record_type=self.record_type)
+        self.record1 = Record.objects.create(occurred_from=self.now,
+                                             occurred_to=self.now,
+                                             geom='POINT (0 0)',
+                                             schema=self.schema)
+        self.record2 = Record.objects.create(occurred_from=self.then,
+                                             occurred_to=self.now,
+                                             geom='POINT (0 0)',
+                                             schema=self.schema)
+
+    def test_toddow(self):
+        url = '/api/records/toddow/?record_type={}'.format(str(self.record_type.uuid))
+        response_data = json.loads(self.client.get(url).content)[1]  # only one record to count
+
+        self.assertEqual(response_data['count'], 1)
+        self.assertEqual(response_data['tod'], self.tod)
+        self.assertEqual(response_data['dow'], self.dow)
+
+    def test_arbitrary_filters(self):
+        base = '/api/records/toddow/?record_type={rt}&&occurred_max={dtmax}Z&occurred_min={dtmin}Z'
+
+        url1 = base.format(rt=self.record_type.uuid,
+                           dtmin=self.laterThanThen.isoformat(),  # later than `then`
+                           dtmax=self.now.isoformat())
+        response_data1 = json.loads(self.client.get(url1).content)
+        self.assertEqual(len(response_data1), 1)
+
+        url2 = base.format(rt=self.record_type.uuid,
+                           dtmin=self.then.isoformat(),  # `then`
+                           dtmax=self.now.isoformat())
+        response_data2 = json.loads(self.client.get(url2).content)
+        self.assertEqual(len(response_data2), 2)
 
 
 class RecordSchemaViewTestCase(AshlarAPITestCase):
@@ -138,7 +187,6 @@ class RecordTypeViewTestCase(AshlarAPITestCase):
                                                         record_type=record_type)
 
         url = reverse('recordtype-detail', args=(record_type.pk,))
-        print('url!', url)
         response = self.client.get(url)
         response_data = json.loads(response.content)
         self.assertEqual(response_data['current_schema'], str(new_record_schema.uuid), response_data)
