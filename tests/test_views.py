@@ -8,7 +8,8 @@ from django.contrib.gis.geos import Polygon, LinearRing, MultiPolygon
 from rest_framework import status
 
 from tests.api_test_case import AshlarAPITestCase
-from ashlar.models import Boundary, RecordSchema, RecordType, Record
+from ashlar.models import (Boundary, BoundaryPolygon,
+                           RecordSchema, RecordType, Record)
 
 
 class RecordViewTestCase(AshlarAPITestCase):

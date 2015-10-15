@@ -1,16 +1,14 @@
-import json
-
 from django.test import TestCase
 from django.utils import timezone
+from django.contrib.gis.geos import Polygon, MultiPolygon
 
 from rest_framework import viewsets
-from rest_framework.exceptions import ParseError
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
 from ashlar.filters import BoundaryPolygonFilter, JsonBFilterBackend, RecordFilter
 from ashlar.models import Boundary, BoundaryPolygon, Record, RecordSchema, RecordType
-from ashlar.views import BoundaryPolygonViewSet, RecordViewSet, RecordSchemaViewSet
+from ashlar.views import BoundaryPolygonViewSet, RecordViewSet
 
 
 class JsonBFilterViewSet(viewsets.ModelViewSet):
@@ -129,13 +127,30 @@ class RecordQueryTestCase(TestCase):
             schema=self.item_schema,
             data={}
         )
-
+        self.boundary = Boundary.objects.create(label='Parent for polygons')
 
     def test_record_type_filter(self):
         """ Test filtering by record type """
         queryset = self.filter_backend.filter_record_type(self.queryset, self.id_type.uuid)
         self.assertEqual(len(queryset), 2)
         self.assertEqual(queryset[0].schema, self.id_schema)
+
+    def test_polygon_id_filter(self):
+        """Test filtering by a polygon ID"""
+        contains0_0 = BoundaryPolygon.objects.create(
+            boundary=self.boundary,
+            data={},
+            geom=MultiPolygon(Polygon(((-1, -1), (1, -1), (1, 1), (-1, 1), (-1, -1))))
+        )
+        no_contains0_0 = BoundaryPolygon.objects.create(
+            boundary=self.boundary,
+            data={},
+            geom=MultiPolygon(Polygon(((1, 1), (2, 1), (2, 2), (1, 2), (1, 1))))
+        )
+        queryset = self.filter_backend.filter_polygon_id(self.queryset, contains0_0.pk)
+        self.assertEqual(queryset.count(), 4)
+        queryset = self.filter_backend.filter_polygon_id(self.queryset, no_contains0_0.pk)
+        self.assertEqual(queryset.count(), 0)
 
 
 class BoundaryPolygonQueryTestCase(TestCase):
