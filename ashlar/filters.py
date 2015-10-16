@@ -1,13 +1,13 @@
 import json
 import django_filters
 
-from django.contrib.gis.geos import GEOSGeometry, GEOSException
+from django.contrib.gis.geos import GEOSGeometry
 from dateutil.parser import parse
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q
 
-from rest_framework.exceptions import ParseError
+from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.filters import BaseFilterBackend
 from rest_framework_gis.filterset import GeoFilterSet
 
@@ -19,6 +19,7 @@ class RecordFilter(GeoFilterSet):
 
     record_type = django_filters.MethodFilter(name='record_type', action='filter_record_type')
     polygon = django_filters.MethodFilter(name='polygon', action='filter_polygon')
+    polygon_id = django_filters.MethodFilter(name='polygon_id', action='filter_polygon_id')
 
     def filter_polygon(self, queryset, geojson):
         """ Method filter for arbitrary polygon, sent in as geojson.
@@ -28,6 +29,22 @@ class RecordFilter(GeoFilterSet):
             return queryset.filter(geom__intersects=poly)
         else:
             raise ParseError('Input polygon must be valid GeoJSON: ' + poly.valid_reason)
+
+    def filter_polygon_id(self, queryset, poly_uuid):
+        """ Method filter for containment within the polygon specified by poly_uuid"""
+        if not poly_uuid:
+            return queryset
+        try:
+            return queryset.filter(geom__intersects=BoundaryPolygon.objects.get(pk=poly_uuid).geom)
+        except ValueError as e:
+            raise ParseError(e)
+        except BoundaryPolygon.DoesNotExist as e:
+            raise NotFound(e)
+        # It would be preferable to do something like this to avoid loading the whole geometry into
+        # Python, but this currently raises 'Complex expressions not supported for GeometryField'
+        #return queryset.filter(geom__intersects=RawSQL(
+        #    'SELECT geom FROM ashlar_boundarypolygon WHERE uuid=%s', (poly_uuid,)
+        #))
 
     def filter_record_type(self, queryset, value):
         """ Method filter for records having a desired record type (uuid)

@@ -3,11 +3,13 @@ import json
 from datetime import datetime, timedelta
 
 from django.core.urlresolvers import reverse
+from django.contrib.gis.geos import Polygon, LinearRing, MultiPolygon
 
 from rest_framework import status
 
 from tests.api_test_case import AshlarAPITestCase
-from ashlar.models import Boundary, RecordSchema, RecordType, Record
+from ashlar.models import (Boundary, BoundaryPolygon,
+                           RecordSchema, RecordType, Record)
 
 
 class RecordViewTestCase(AshlarAPITestCase):
@@ -282,3 +284,21 @@ class BoundaryViewTestCase(AshlarAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['type'], 'FeatureCollection')
         self.assertEqual(len(response.data['features']), 3)
+
+
+class BoundaryPolygonViewTestCase(AshlarAPITestCase):
+    def setUp(self):
+        boundary = Boundary.objects.create(label='fooOK', source_file='foo.zip',
+                                           status=Boundary.StatusTypes.COMPLETE)
+        coords = ((0, 0), (0, 1), (1, 1), (1, 0), (0, 0))
+        self.poly = BoundaryPolygon.objects.create(data={},
+                                                   geom=MultiPolygon(Polygon(LinearRing(coords))),
+                                                   boundary=boundary)
+
+    def test_no_geom_param(self):
+        """Make sure that the nogeom param excludes the geometry and includes a bounding box"""
+        super(BoundaryPolygonViewTestCase, self).setUp()
+        url = reverse('boundarypolygon-detail', args=[self.poly.uuid])
+        response = self.client.get(url, {'nogeom': True})
+        self.assertIn('bbox', response.data)
+        self.assertNotIn('geom', response.data)

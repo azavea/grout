@@ -7,7 +7,7 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeoModelSerializer
 
 from ashlar.models import Boundary, BoundaryPolygon, Record, RecordType, RecordSchema
-from ashlar.serializer_fields import JsonBField, JsonSchemaField
+from ashlar.serializer_fields import JsonBField, JsonSchemaField, GeomBBoxField
 
 
 class RecordSerializer(GeoModelSerializer):
@@ -70,6 +70,16 @@ class BoundaryPolygonSerializer(GeoFeatureModelSerializer):
         geo_field = 'geom'
         id_field = 'uuid'
         exclude = ('boundary',)
+
+
+class BoundaryPolygonNoGeomSerializer(ModelSerializer):
+    """Serialize a BoundaryPolygon without any geometry info"""
+    data = JsonBField()
+    bbox = GeomBBoxField(source='geom')
+
+    class Meta:
+        model = BoundaryPolygon
+        exclude = ('geom',)
 
 
 class BoundarySerializer(GeoModelSerializer):

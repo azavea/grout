@@ -17,6 +17,7 @@ from ashlar.models import (Boundary,
                            RecordSchema)
 from ashlar.serializers import (BoundarySerializer,
                                 BoundaryPolygonSerializer,
+                                BoundaryPolygonNoGeomSerializer,
                                 RecordSerializer,
                                 RecordTypeSerializer,
                                 RecordSchemaSerializer)
@@ -39,6 +40,11 @@ class BoundaryPolygonViewSet(viewsets.ModelViewSet):
     bbox_filter_field = 'geom'
     jsonb_filter_field = 'data'
     filter_backends = (InBBoxFilter, JsonBFilterBackend, DjangoFilterBackend)
+
+    def get_serializer_class(self):
+        if 'nogeom' in self.request.query_params and self.request.query_params['nogeom']:
+            return BoundaryPolygonNoGeomSerializer
+        return BoundaryPolygonSerializer
 
 
 class RecordViewSet(viewsets.ModelViewSet):
