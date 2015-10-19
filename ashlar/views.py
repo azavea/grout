@@ -104,6 +104,7 @@ class RecordTypeViewSet(viewsets.ModelViewSet):
     serializer_class = RecordTypeSerializer
     filter_class = RecordTypeFilter
     pagination_class = OptionalLimitOffsetPagination
+    ordering = ('plural_label',)
 
     @detail_route(methods=['get'])
     def recent_counts(self, request, pk=None):
@@ -170,6 +171,7 @@ class BoundaryViewSet(viewsets.ModelViewSet):
     serializer_class = BoundarySerializer
     filter_class = BoundaryFilter
     pagination_class = OptionalLimitOffsetPagination
+    ordering = ('display_field',)
 
     def create(self, request, *args, **kwargs):
         """Overwritten to allow use of semantically important/appropriate status codes for
