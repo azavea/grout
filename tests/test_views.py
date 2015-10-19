@@ -38,7 +38,9 @@ class RecordViewTestCase(AshlarAPITestCase):
 
     def test_toddow(self):
         url = '/api/records/toddow/?record_type={}'.format(str(self.record_type.uuid))
-        response_data = json.loads(self.client.get(url).content)[1]  # only one record to count
+        response = json.loads(self.client.get(url).content)
+        # there are two responses, the first of which happens to match what we want to look at
+        response_data = response[0]
 
         self.assertEqual(response_data['count'], 1)
         self.assertEqual(response_data['tod'], self.tod)
