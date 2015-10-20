@@ -30,10 +30,12 @@ class RecordViewTestCase(AshlarAPITestCase):
         self.record1 = Record.objects.create(occurred_from=self.now,
                                              occurred_to=self.now,
                                              geom='POINT (0 0)',
+                                             location_text='Equator',
                                              schema=self.schema)
         self.record2 = Record.objects.create(occurred_from=self.then,
                                              occurred_to=self.now,
                                              geom='POINT (0 0)',
+                                             location_text='Equator',
                                              schema=self.schema)
 
     def test_toddow(self):

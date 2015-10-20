@@ -31,3 +31,15 @@ able to run tests interactively by running `docker-compose run test python
 /opt/ashlar/run_tests.py`, which would allow you to manually delete the database when
 prompted.
 
+
+## Testing on OSX
+
+1. Install docker toolbox (https://www.docker.com/toolbox).
+2. Run a terminal window through Docker Quickstart Terminal and create a docker machine for ashlar:
+`docker-machine create ashlar -d virtualbox`
+3. Start the virtualbox VM:
+`docker-machine start ashlar`
+
+If you see Started machines may have new IP addresses. You may need to re-run the docker-machine env command in the terminal: `eval "$(docker-machine env mub-monitor)"`
+4. Finally, to run tests, `docker-compose run test`
+
