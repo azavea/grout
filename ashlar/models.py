@@ -58,6 +58,7 @@ class Record(AshlarModel):
     occurred_to = models.DateTimeField()
 
     geom = models.PointField(srid=settings.ASHLAR['SRID'])
+    location_text = models.CharField(max_length=200, null=True, blank=True)
     schema = models.ForeignKey('RecordSchema')
     data = jsb.JsonBField()
 
