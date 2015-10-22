@@ -6,6 +6,7 @@ from rest_framework import routers
 
 from ashlar import views
 
+# To get a default set of views, just include ashlar.urls.urlpatterns in your main app's urls.py
 router = routers.DefaultRouter()
 router.register('boundaries', views.BoundaryViewSet)
 router.register('boundarypolygons', views.BoundaryPolygonViewSet)
