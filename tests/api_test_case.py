@@ -25,8 +25,8 @@ class AshlarAPITestCase(APITestCase):
             self.user = User.objects.get(username='admin')
         except ObjectDoesNotExist:
             self.user = User.objects.create_user('admin',
-                                                'ashlar@azavea.com',
-                                                '123')
+                                                 'ashlar@azavea.com',
+                                                 '123')
             self.user.is_superuser = True
             self.user.is_staff = True
             self.user.save()
