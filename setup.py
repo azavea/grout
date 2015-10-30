@@ -13,14 +13,14 @@ setup(
     keywords='gis jsonschema',
     packages=find_packages(exclude=['tests']),
     dependency_links=[
-        'https://github.com/azavea/djsonb/tarball/develop#egg=djsonb-0.1.0'
+        'https://github.com/azavea/djsonb/tarball/develop#egg=djsonb-0.1.2'
     ],
     install_requires=[
         'Django >=1.8',
         'djangorestframework >=3.1.1',
         'djangorestframework-gis >=0.8.1',
         'django-filter >=0.9.2',
-        'djsonb <=0.1.0',
+        'djsonb >=0.1.2',
         'jsonschema >=2.4.0',
         'psycopg2 >=2.6',
         'django-extensions >=1.5.2',
