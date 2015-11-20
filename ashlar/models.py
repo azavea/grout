@@ -59,6 +59,13 @@ class Record(AshlarModel):
 
     geom = models.PointField(srid=settings.ASHLAR['SRID'])
     location_text = models.CharField(max_length=200, null=True, blank=True)
+    city = models.CharField(max_length=50, null=True, blank=True)
+    city_district = models.CharField(max_length=50, null=True, blank=True)
+    county = models.CharField(max_length=50, null=True, blank=True)
+    neighborhood = models.CharField(max_length=50, null=True, blank=True)
+    road = models.CharField(max_length=200, null=True, blank=True)
+    state = models.CharField(max_length=50, null=True, blank=True)
+
     schema = models.ForeignKey('RecordSchema')
     data = jsb.JsonBField()
 
