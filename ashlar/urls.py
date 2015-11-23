@@ -22,5 +22,3 @@ urlpatterns = [
 # Allow login to the browseable API if in debug mode
 if settings.DEVELOP:
     urlpatterns.append(url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')))
-if getattr(settings, 'OAUTH2_PROVIDER', None):
-    urlpatterns.append(url(r'^o/', include('oauth2_provider.urls', namespace='oauth2_provider')))
