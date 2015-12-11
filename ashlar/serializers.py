@@ -1,5 +1,11 @@
 from django.db import transaction
+from django.conf import settings
 from django.forms.models import model_to_dict
+
+import datetime
+import json
+import pytz
+import requests
 
 from rest_framework import fields
 from rest_framework import serializers
@@ -13,6 +19,88 @@ from ashlar.serializer_fields import JsonBField, JsonSchemaField, GeomBBoxField
 class RecordSerializer(GeoModelSerializer):
 
     data = JsonBField()
+
+    def create(self, validated_data):
+        """Override create, so we can set empty weather data"""
+        self.set_empty_weather_data(validated_data)
+        record = super(RecordSerializer, self).create(validated_data)
+        return record
+
+    def update(self, record, validated_data):
+        """Override update, so we can set empty weather data"""
+        self.set_empty_weather_data(validated_data)
+        return super(RecordSerializer, self).update(record, validated_data)
+
+    def set_empty_weather_data(self, data):
+        """Checks if weather data is empty, and if so, sets it using forecast.io
+
+        :param data: Python dict representing record to be saved
+        """
+        # Only request data from forecast.io if an API key is configured and weather data is missing
+        forecast_io_key = settings.FORECAST_IO_API_KEY
+        weather = data['weather']
+        light = data['light']
+        if not forecast_io_key or (weather and light):
+            return
+
+        geom = json.loads(data['geom'])
+        params = {
+            'base_url': 'https://api.forecast.io/forecast',
+            'key': forecast_io_key,
+            'lat': geom['coordinates'][1],
+            'lon': geom['coordinates'][0],
+            'time': data['occurred_from'].isoformat(),
+            'exclude': 'exclude=currently,hourly,minutely,flags'
+        }
+        url = '{base_url}/{key}/{lat},{lon},{time}?{exclude}'.format(**params)
+        response = requests.get(url)
+
+        # Abort if the request failed for some reason
+        if response.status_code is not requests.codes.ok:
+            return
+
+        forecast_data = response.json()['daily']['data'][0]
+
+        # Only set the weather if it's empty
+        if not data['weather']:
+            data['weather'] = forecast_data['icon']
+
+        # Only set the light if it's empty
+        if not data['light']:
+            data['light'] = self.get_light_value(forecast_data, data['occurred_from'])
+
+    def get_light_value(self, forecast_data, occurred_from):
+        """Helper for obtaining the light value using sunrise/sunset time
+
+        :param forecast_data: Python dict representing data from forecast.io
+        :param occurred_from: datetime object representing when the record occurred
+        """
+        # Selects from one of the following four values:
+        #   day: occurred_from is between sunrise and sunset
+        #   dawn: occurred_from is within the half-hour preceding sunrise
+        #   dusk: occurred_from is within the half-hour following sunset
+        #   night: occurred_from is not within day, dawn, or dusk
+        #
+        # Note: using a half-hour for dawn and dusk is just a rule-of-thumb, as
+        # the actual definition involves angles of the sun in reference to the
+        # horizon, and would be more complicated to properly implement.
+        tz = pytz.timezone(settings.TIME_ZONE)
+        dawn_dusk_offset = datetime.timedelta(minutes=30)
+        sunrise = tz.localize(datetime.datetime.fromtimestamp(forecast_data['sunriseTime']))
+        sunset = tz.localize(datetime.datetime.fromtimestamp(forecast_data['sunsetTime']))
+        min_dawn = sunrise - dawn_dusk_offset
+        max_dusk = sunset + dawn_dusk_offset
+
+        if sunrise <= occurred_from <= sunset:
+            return 'day'
+
+        if min_dawn <= occurred_from <= sunrise:
+            return 'dawn'
+
+        if sunset <= occurred_from <= max_dusk:
+            return 'dusk'
+
+        return 'night'
 
     class Meta:
         model = Record
