@@ -23,7 +23,7 @@ setup(
         'djsonb >=0.1.5',
         'jsonschema >=2.4.0',
         'psycopg2 >=2.6',
-        'django-extensions >=1.5.2',
+        'django-extensions >=1.6.0',
         'python-dateutil >=2.4.2',
         'PyYAML >=3.11',
         'pytz >=2015.7',
