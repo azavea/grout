@@ -38,19 +38,25 @@ class RecordSerializer(GeoModelSerializer):
         """
         # Only request data from forecast.io if an API key is configured and weather data is missing
         forecast_io_key = settings.FORECAST_IO_API_KEY
-        weather = data['weather']
-        light = data['light']
-        if not forecast_io_key or (weather and light):
+        weather = data.get('weather')
+        light = data.get('light')
+        geom_string = data.get('geom')
+        if not forecast_io_key or not geom_string or (weather and light):
             return
 
-        geom = json.loads(data['geom'])
+        geom = json.loads(geom_string)
+        coordinates = geom.get('coordinates')
+        occurred_from = data['occurred_from']
+        if not coordinates or not occurred_from:
+            return
+
         params = {
             'base_url': 'https://api.forecast.io/forecast',
             'key': forecast_io_key,
-            'lat': geom['coordinates'][1],
-            'lon': geom['coordinates'][0],
-            'time': data['occurred_from'].isoformat(),
-            'exclude': 'exclude=currently,hourly,minutely,flags'
+            'lat': coordinates[1],
+            'lon': coordinates[0],
+            'time': occurred_from.isoformat(),
+            'exclude': 'exclude=hourly,minutely,flags'
         }
         url = '{base_url}/{key}/{lat},{lon},{time}?{exclude}'.format(**params)
         response = requests.get(url)
@@ -59,15 +65,25 @@ class RecordSerializer(GeoModelSerializer):
         if response.status_code is not requests.codes.ok:
             return
 
-        forecast_data = response.json()['daily']['data'][0]
+        response_dict = response.json()
+        daily = response_dict.get('daily')
+        currently = response_dict.get('currently')
+        if not daily or not currently:
+            return
 
         # Only set the weather if it's empty
-        if not data['weather']:
-            data['weather'] = forecast_data['icon']
+        if not data.get('weather'):
+            data['weather'] = currently.get('icon')
+
+        daily_data = daily.get('data')
+        if not daily_data or not len(daily_data):
+            return
+
+        forecast_data = daily_data[0]
 
         # Only set the light if it's empty
-        if not data['light']:
-            data['light'] = self.get_light_value(forecast_data, data['occurred_from'])
+        if not data.get('light'):
+            data['light'] = self.get_light_value(forecast_data, occurred_from)
 
     def get_light_value(self, forecast_data, occurred_from):
         """Helper for obtaining the light value using sunrise/sunset time
@@ -84,10 +100,16 @@ class RecordSerializer(GeoModelSerializer):
         # Note: using a half-hour for dawn and dusk is just a rule-of-thumb, as
         # the actual definition involves angles of the sun in reference to the
         # horizon, and would be more complicated to properly implement.
+
+        sunrise_time = forecast_data.get('sunriseTime')
+        sunset_time = forecast_data.get('sunsetTime')
+        if not sunrise_time or not sunset_time:
+            return None
+
         tz = pytz.timezone(settings.TIME_ZONE)
         dawn_dusk_offset = datetime.timedelta(minutes=30)
-        sunrise = tz.localize(datetime.datetime.fromtimestamp(forecast_data['sunriseTime']))
-        sunset = tz.localize(datetime.datetime.fromtimestamp(forecast_data['sunsetTime']))
+        sunrise = tz.localize(datetime.datetime.fromtimestamp(sunrise_time))
+        sunset = tz.localize(datetime.datetime.fromtimestamp(sunset_time))
         min_dawn = sunrise - dawn_dusk_offset
         max_dusk = sunset + dawn_dusk_offset
 
