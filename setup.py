@@ -26,7 +26,8 @@ setup(
         'django-extensions >=1.5.2',
         'python-dateutil >=2.4.2',
         'PyYAML >=3.11',
-        'pytz >= 2015.7'
+        'pytz >=2015.7',
+        'requests >=2.8.1'
     ],
     extras_require={
         'dev': [],
