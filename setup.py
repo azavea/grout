@@ -16,7 +16,7 @@ setup(
         'https://github.com/azavea/djsonb/tarball/develop#egg=djsonb-0.1.4'
     ],
     install_requires=[
-        'Django >=1.8',
+        'Django ==1.8.6',
         'djangorestframework >=3.1.1',
         'djangorestframework-gis >=0.8.1',
         'django-filter >=0.9.2',
