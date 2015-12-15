@@ -1,7 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from ashlar.serializer_fields import JsonBField, JsonSchemaField
+from ashlar.serializer_fields import (JsonBField, JsonSchemaField, MethodTransformJsonField,
+                                      DropJsonKeyException)
 from ashlar.validators import validate_json_schema
 
 
@@ -23,8 +24,8 @@ class SerializerJsonBFieldTestCase(TestCase):
         to_value = self.jsonb_field.to_representation(None)
         self.assertEqual(to_value, None)
 
-        to_value = self.jsonb_field.to_representation([1,2,3])
-        self.assertEqual(to_value, [1,2,3])
+        to_value = self.jsonb_field.to_representation([1, 2, 3])
+        self.assertEqual(to_value, [1, 2, 3])
 
     def test_to_internal_value(self):
         """ Check valid json passed when converting
@@ -101,3 +102,42 @@ class JsonSchemaValidatorTestCase(TestCase):
         """Ensure that JSON Schema validation is properly wrapped in a ValidationError"""
         with self.assertRaises(ValidationError):
             validate_json_schema(self.invalid_schema)
+
+
+class MethodTransformJsonFieldTestCase(TestCase):
+    """Test transformed JSON field"""
+    def setUp(self):
+        self.test_json = {"dict": dict(), "foo": dict(), "list": [], "num": 5,
+                          "bool": True, "string": "Foo"}
+
+    def transform_val_is_dict(self, key, value):
+        """Returns the value if it is a dict, raises DropJsonKeyException otherwise"""
+        if isinstance(value, dict):
+            return key, value
+        else:
+            raise DropJsonKeyException
+
+    def transform_append_str(self, key, value):
+        """Returns the value unaltered unless it's a string in which case "transform" is appended"""
+        if isinstance(value, str):
+            return key, value + "transform"
+        else:
+            return key, value
+
+    def test_drop_keys(self):
+        """Test that transform method can drop keys."""
+        dict_only_filter = MethodTransformJsonField('transform_val_is_dict')
+        # Bind to self so the field can find the rigth method, even though self isn't a serializer
+        dict_only_filter.bind('field name here in real life', self)
+
+        transformed = dict_only_filter.to_representation(self.test_json)
+        self.assertEqual(transformed, {"dict": {}, "foo": {}})
+
+    def test_transform_values(self):
+        """Test that transform method can transform values."""
+        append_str = MethodTransformJsonField('transform_append_str')
+        append_str.bind('field name here in real life', self)
+        transformed = append_str.to_representation(self.test_json)
+        # "Foo" should have had "transform" appended.
+        self.assertEqual(transformed, {"dict": dict(), "foo": dict(), "list": [], "num": 5,
+                                       "bool": True, "string": "Footransform"})

@@ -1,13 +1,11 @@
 from django.db import transaction
 from django.conf import settings
-from django.forms.models import model_to_dict
 
 import datetime
 import json
 import pytz
 import requests
 
-from rest_framework import fields
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeoModelSerializer
