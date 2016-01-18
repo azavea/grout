@@ -63,7 +63,7 @@ class RecordTypeFilter(django_filters.FilterSet):
 
     class Meta:
         model = RecordType
-        fields = ['active']
+        fields = ['active', 'label']
 
 
 class BoundaryFilter(GeoFilterSet):
