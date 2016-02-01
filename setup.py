@@ -13,7 +13,7 @@ setup(
     keywords='gis jsonschema',
     packages=find_packages(exclude=['tests']),
     dependency_links=[
-        'https://github.com/azavea/djsonb/tarball/feature/pattern-search-OR#egg=djsonb-0.1.6'
+        'https://github.com/azavea/djsonb/tarball/develop#egg=djsonb-0.1.6'
     ],
     install_requires=[
         'Django ==1.8.6',
