@@ -72,6 +72,8 @@ class Record(AshlarModel):
     schema = models.ForeignKey('RecordSchema')
     data = jsb.JsonBField()
 
+    archived = models.BooleanField(default=False)
+
     objects = models.GeoManager()
 
     class Meta(object):
