@@ -56,7 +56,7 @@ class RecordFilter(GeoFilterSet):
 
     class Meta:
         model = Record
-        fields = ['data', 'record_type', 'geom']
+        fields = ['data', 'record_type', 'geom', 'archived']
 
 
 class RecordTypeFilter(django_filters.FilterSet):
