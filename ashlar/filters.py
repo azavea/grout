@@ -61,9 +61,16 @@ class RecordFilter(GeoFilterSet):
 
 class RecordTypeFilter(django_filters.FilterSet):
 
+    record = django_filters.MethodFilter(name='record', action='type_for_record')
+
+    def type_for_record(self, queryset, record_id):
+        """ Filter down to only the record type that corresponds to the given record. """
+        record = Record.objects.get(pk=record_id)
+        return queryset.filter(pk=record.schema.record_type_id)
+
     class Meta:
         model = RecordType
-        fields = ['active', 'label']
+        fields = ['active', 'label', 'record']
 
 
 class BoundaryFilter(GeoFilterSet):
