@@ -65,8 +65,9 @@ class RecordTypeFilter(django_filters.FilterSet):
 
     def type_for_record(self, queryset, record_id):
         """ Filter down to only the record type that corresponds to the given record. """
-        record = Record.objects.get(pk=record_id)
-        return queryset.filter(pk=record.schema.record_type_id)
+        record_type_id = Record.objects.filter(pk=record_id).values_list(
+            'schema__record_type_id', flat=True).first()
+        return queryset.filter(pk=record_type_id)
 
     class Meta:
         model = RecordType
