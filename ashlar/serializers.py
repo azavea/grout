@@ -1,3 +1,4 @@
+import logging
 from django.db import transaction
 from django.conf import settings
 
@@ -12,6 +13,8 @@ from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeoModelSe
 
 from ashlar.models import Boundary, BoundaryPolygon, Record, RecordType, RecordSchema
 from ashlar.serializer_fields import JsonBField, JsonSchemaField, GeomBBoxField
+
+logger = logging.getLogger(__name__)
 
 
 class RecordSerializer(GeoModelSerializer):
@@ -53,7 +56,7 @@ class RecordSerializer(GeoModelSerializer):
             'key': forecast_io_key,
             'lat': coordinates[1],
             'lon': coordinates[0],
-            'time': occurred_from.isoformat(),
+            'time': occurred_from.replace(microsecond=0).isoformat(),
             'exclude': 'exclude=hourly,minutely,flags'
         }
         url = '{base_url}/{key}/{lat},{lon},{time}?{exclude}'.format(**params)
@@ -61,6 +64,7 @@ class RecordSerializer(GeoModelSerializer):
 
         # Abort if the request failed for some reason
         if response.status_code is not requests.codes.ok:
+            logger.warn("forecast.io query failed with url: {}".format(url))
             return
 
         response_dict = response.json()
