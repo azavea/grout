@@ -17,9 +17,9 @@ setup(
     ],
     install_requires=[
         'Django ==1.8.6',
-        'djangorestframework >=3.1.1',
-        'djangorestframework-gis >=0.8.1',
-        'django-filter >=0.9.2',
+        'djangorestframework >=3.1.1, <3.5.0',
+        'djangorestframework-gis >=0.8.1, <0.12.0',
+        'django-filter >=0.9.2, <0.14.0',
         'djsonb >=0.2.2',
         'jsonschema >=2.4.0',
         'psycopg2 >=2.6',
