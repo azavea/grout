@@ -4,12 +4,21 @@ from setuptools import setup, find_packages
 
 tests_require = []
 
+
+def readme():
+    with open('README.md') as f:
+        return f.read()
+
 setup(
     name='ashlar',
-    version='0.0.2',
-    description='Define and validate schemas for metadata for geotemporal event records',
+    version='1.0.0',
     author='Azavea, Inc.',
     author_email='info@azavea.com',
+    description='A flexible schema framework for geospatial data.',
+    long_description=readme(),
+    long_description_content_type='text/markdown',
+    url='https://github.com/azavea/ashlar',
+    license='MIT',
     keywords='gis jsonschema',
     packages=find_packages(exclude=['tests']),
     dependency_links=[
@@ -35,4 +44,25 @@ setup(
     },
     test_suite='tests',
     tests_require=tests_require,
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Topic :: Database',
+        'Topic :: Database :: Database Engines/Servers',
+        'Topic :: Database :: Front-Ends',
+        'Topic :: Internet :: WWW/HTTP',
+        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+        'Topic :: Internet :: WWW/HTTP :: WSGI',
+        'Topic :: Internet :: WWW/HTTP :: WSGI :: Server',
+        'Topic :: Software Development :: Libraries',
+        'Topic :: Software Development :: Libraries :: Application Frameworks',
+        'Environment :: Web Environment',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2 :: Only',
+        'Programming Language :: Python :: 2.7',
+        'Framework :: Django',
+        'Framework :: Django :: 1.8',
+        'Operating System :: OS Independent',
+    ],
 )

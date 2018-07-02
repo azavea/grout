@@ -1,20 +1,34 @@
 language: python
 python:
-  #- "3.3"  # Fails, add support later!
-  - "2.7"
-
+- '2.7'
 addons:
-  postgresql: "9.4"
+  postgresql: '9.4'
   apt:
     packages:
-      - postgresql-9.4-postgis-2.3
-
+    - postgresql-9.4-postgis-2.3
 env:
-  - DJANGO_SETTINGS_MODULE='settings_travis'
-
+- DJANGO_SETTINGS_MODULE='settings_travis'
 before_script:
-  - psql -U postgres -c "create extension postgis"
-
+- psql -U postgres -c "create extension postgis"
 install: pip install --process-dependency-links --allow-external djsonb -e ./
-
 script: python run_tests.py
+deploy:
+  - provider: pypi
+    user: azavea
+    skip_existing: true
+    password:
+      secure: iP4WfDokE1JImVAw4udpnc5ZRvyXsMM4xLGWFNJ8dX13SOP5eCGXhghhKRIKOW84t1upb396+FYZX0IXO+kWlYa1Lzvry3x3fXLBQryRZtQ7Pf97e/EYn2IzjngxQ7mwg6qe2MaH4GS2cGMs9/6UYaXwqr0Ro2d0zBEQ4yV1Z8U=
+    on:
+      distributions: sdist bdist_wheel
+      repo: azavea/ashlar
+      branch: master
+  - provider: pypi
+    server: https://test.pypi.org/legacy/
+    user: azavea
+    skip_existing: true
+    password:
+      secure: iP4WfDokE1JImVAw4udpnc5ZRvyXsMM4xLGWFNJ8dX13SOP5eCGXhghhKRIKOW84t1upb396+FYZX0IXO+kWlYa1Lzvry3x3fXLBQryRZtQ7Pf97e/EYn2IzjngxQ7mwg6qe2MaH4GS2cGMs9/6UYaXwqr0Ro2d0zBEQ4yV1Z8U=
+    on:
+      distributions: sdist bdist_wheel
+      repo: azavea/ashlar
+      branch: develop
