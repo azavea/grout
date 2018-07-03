@@ -1,11 +1,17 @@
-db:
-  image: mdillon/postgis:9.4
-  ports:
-    - "5432"
+version: '3'
 
-test:
-  build: .
-  links:
-    - db
-  volumes:
-    - .:/opt/ashlar
+services:
+
+  db:
+    image: quay.io/azavea/postgis:2.4-postgres10.3-slim
+    ports:
+      - "5432"
+
+  test:
+    build: .
+    depends_on:
+      - db
+    volumes:
+      - .:/opt/ashlar
+    environment:
+      - PYTHONUNBUFFERED=0  # Do not buffer output (allows Docker to stream stdout)

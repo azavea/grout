@@ -21,19 +21,8 @@ def get_shapefiles_in_dir(path):
     for dirpath, subdirs, files in os.walk(path):
         for name in files:
             all_files.append(os.path.join(dirpath, name))
-    shapefiles = filter(lambda f: f.endswith('.shp'), all_files)
+    shapefiles = [f for f in all_files if f.endswith('.shp')]
     return shapefiles
-
-
-def get_union(geoms):
-    """Attempts to union a list of geometries."""
-    if len(geoms) <= 0:
-        raise ValueError('Cannot union empty feature list.')
-
-    combined = geoms[0]
-    for geom in geoms[1:]:
-        combined = combined.union(geom)
-    return combined
 
 
 def make_multipolygon(geom):

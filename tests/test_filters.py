@@ -1,3 +1,7 @@
+import json
+
+import mock
+
 from django.test import TestCase
 from django.utils import timezone
 from django.contrib.gis.geos import Polygon, MultiPolygon
@@ -5,8 +9,10 @@ from django.contrib.gis.geos import Polygon, MultiPolygon
 from rest_framework import viewsets
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
+from rest_framework.exceptions import ParseError
 
-from ashlar.filters import BoundaryPolygonFilter, JsonBFilterBackend, RecordFilter
+from ashlar.filters import (BoundaryPolygonFilter, JsonBFilterBackend, RecordFilter,
+                            RecordTypeFilter)
 from ashlar.models import Boundary, BoundaryPolygon, Record, RecordSchema, RecordType
 from ashlar.views import BoundaryPolygonViewSet, RecordViewSet
 
@@ -135,6 +141,15 @@ class RecordQueryTestCase(TestCase):
         self.assertEqual(len(queryset), 2)
         self.assertEqual(queryset[0].schema, self.id_schema)
 
+    def test_type_for_record_filter(self):
+        """Test retrieving a RecordType from a Record."""
+        filter_backend = RecordTypeFilter()
+        record_types = RecordType.objects.all()
+
+        queryset = filter_backend.type_for_record(record_types, self.id_record_1.uuid)
+
+        self.assertEqual(queryset.count(), 1)
+
     def test_polygon_id_filter(self):
         """Test filtering by a polygon ID"""
         contains0_0 = BoundaryPolygon.objects.create(
@@ -147,10 +162,66 @@ class RecordQueryTestCase(TestCase):
             data={},
             geom=MultiPolygon(Polygon(((1, 1), (2, 1), (2, 2), (1, 2), (1, 1))))
         )
+        # Test a geometry that contains the records
         queryset = self.filter_backend.filter_polygon_id(self.queryset, contains0_0.pk)
         self.assertEqual(queryset.count(), 4)
+
+        # Test a geometry that does not contain any of the records
         queryset = self.filter_backend.filter_polygon_id(self.queryset, no_contains0_0.pk)
         self.assertEqual(queryset.count(), 0)
+
+        # Test leaving out an ID
+        queryset = self.filter_backend.filter_polygon_id(self.queryset, None)
+        self.assertEqual(queryset.count(), 4)
+
+    def test_valid_polygon_fiter(self):
+        """Test filtering by an arbitrary valid GeoJSON polygon."""
+        # Test a geometry that contains the records (all of which have coordinates (0, 0)).
+        contains0_0 = json.dumps({
+            'type': 'Polygon',
+            'coordinates': [[[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]]]
+        })
+        queryset = self.filter_backend.filter_polygon(self.queryset, contains0_0)
+        self.assertEqual(queryset.count(), 4)
+
+        # Test a geometry that does not contain the records.
+        no_contains0_0 = json.dumps({
+            'type': 'Polygon',
+            'coordinates': [[[1, 1], [1, 2], [2, 2], [2, 1], [1, 1]]]
+        })
+        queryset = self.filter_backend.filter_polygon(self.queryset, no_contains0_0)
+        self.assertEqual(queryset.count(), 0)
+
+    def test_polygon_filter_parse_error(self):
+        """Test that filtering by a malformed GeoJSON polygon raises an error."""
+        invalid_geojson = json.dumps({
+            'type': 'Foo',
+            'coordinates': [[[]]]
+        })
+
+        with self.assertRaises(ParseError):
+            queryset = self.filter_backend.filter_polygon(self.queryset, invalid_geojson)
+
+    def test_invalid_polygon_filter(self):
+        """Test that filtering by an invalid GeoJSON polygon raises an error."""
+        class MockGeometry(mock.MagicMock):
+            @property
+            def valid(self):
+                return False
+
+            @property
+            def valid_reason(self):
+                return ''
+
+        # Patch GEOSGeometry so that the geometry is always invalid.
+        with mock.patch('ashlar.filters.GEOSGeometry', new_callable=MockGeometry):
+            geojson = json.dumps({
+                'type': 'Polygon',
+                'coordinates': [[[1, 1], [1, 2], [2, 2], [2, 1], [1, 1]]]
+            })
+
+            with self.assertRaises(ParseError) as e:
+                queryset = self.filter_backend.filter_polygon(self.queryset, geojson)
 
 
 class BoundaryPolygonQueryTestCase(TestCase):

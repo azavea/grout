@@ -23,7 +23,7 @@ class RecordSchemaViewTestCase(AshlarAPITestCase):
                                     version=1,
                                     record_type=self.record_type)
         url = reverse('recordschema-list')
-        response_data = json.loads(self.client.get(url).content)
+        response_data = json.loads(self.client.get(url).content.decode('utf-8'))
         self.assertEqual(response_data['count'], 1)
 
     def test_detail(self):
@@ -32,8 +32,8 @@ class RecordSchemaViewTestCase(AshlarAPITestCase):
                                              version=1,
                                              record_type=self.record_type)
         url = reverse('recordschema-detail', args=(schema.pk,))
-        response_data = json.loads(self.client.get(url).content)
-        self.assertEqual(unicode(schema.pk), response_data['uuid'])
+        response_data = json.loads(self.client.get(url).content.decode('utf-8'))
+        self.assertEqual(str(schema.pk), response_data['uuid'])
         self.assertEqual(schema.schema, response_data['schema'])
         self.assertEqual(str(schema.record_type.uuid), response_data['record_type'])
 
@@ -45,7 +45,7 @@ class RecordSchemaViewTestCase(AshlarAPITestCase):
                        "record_type": "%s"}""" % self.record_type.pk
         response = self.client.post(url, schema_data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
-        response_data = json.loads(response.content)
+        response_data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response_data['version'], 1)
 
     def test_create_new_version(self):
@@ -59,11 +59,11 @@ class RecordSchemaViewTestCase(AshlarAPITestCase):
         url = reverse('recordschema-list')
         response = self.client.post(url, schema_data, content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
-        response_data = json.loads(response.content)
+        response_data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response_data['version'], schema.version + 1)
         # Reload schema from db; its next_version should have changed.
         schema = RecordSchema.objects.get(pk=schema.pk)
-        self.assertEqual(unicode(schema.next_version.pk), response_data['uuid'])
+        self.assertEqual(str(schema.next_version.pk), response_data['uuid'])
         self.assertEqual(RecordSchema.objects.filter(record_type=schema.record_type).count(), 2)
 
     def test_no_update(self):
@@ -107,7 +107,7 @@ class RecordTypeViewTestCase(AshlarAPITestCase):
                                                     record_type=record_type)
         url = reverse('recordtype-detail', args=(record_type.pk,))
         response = self.client.get(url)
-        response_data = json.loads(response.content)
+        response_data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response_data['current_schema'], str(record_schema.uuid), response_data)
 
         new_schema = dict(self.schema)
@@ -118,7 +118,7 @@ class RecordTypeViewTestCase(AshlarAPITestCase):
 
         url = reverse('recordtype-detail', args=(record_type.pk,))
         response = self.client.get(url)
-        response_data = json.loads(response.content)
+        response_data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response_data['current_schema'],
                          str(new_record_schema.uuid),
                          response_data)
@@ -130,7 +130,7 @@ class RecordTypeViewTestCase(AshlarAPITestCase):
                                                     record_type=record_type)
         url = reverse('recordtype-detail', args=(record_type.pk,))
         response = self.client.get(url)
-        response_data = json.loads(response.content)
+        response_data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response_data['current_schema'], str(record_schema.uuid), response_data)
 
         new_schema = dict(self.schema)
@@ -141,7 +141,7 @@ class RecordTypeViewTestCase(AshlarAPITestCase):
 
         url = reverse('recordtype-detail', args=(record_type.pk,))
         response = self.client.get(url)
-        response_data = json.loads(response.content)
+        response_data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response_data['current_schema'], str(new_record_schema.uuid),
                          response_data)
 
@@ -178,7 +178,11 @@ class BoundaryViewTestCase(AshlarAPITestCase):
 
     def test_create_adds_geom_from_valid_shapefile(self):
         response = self.post_boundary('philly.zip')
+
+        # Make sure that the upload hasn't errored
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['status'], 'COMPLETE')
+
         boundary_uuid = response.data['uuid']
         boundary = Boundary.objects.get(uuid=boundary_uuid)
         self.assertGreater(boundary.polygons.count(), 0)
@@ -186,7 +190,11 @@ class BoundaryViewTestCase(AshlarAPITestCase):
     def test_create_from_macosx_shapefile(self):
         """ Ensure __MACOSX files in archive don't wreck the upload """
         response = self.post_boundary('bayarea_macosx.zip')
+
+        # Make sure that the upload hasn't errored
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['status'], 'COMPLETE')
+
         boundary_uuid = response.data['uuid']
         boundary = Boundary.objects.get(uuid=boundary_uuid)
         self.assertGreater(boundary.polygons.count(), 0)
@@ -194,7 +202,11 @@ class BoundaryViewTestCase(AshlarAPITestCase):
     def test_boundary_crud(self):
         """ Already tested create, so don't bother, but test other operations """
         response = self.post_boundary('philly.zip')
+
+        # Make sure that the upload hasn't errored
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['status'], 'COMPLETE')
+
         boundary_dict = response.data
         uuid = boundary_dict['uuid']
 
@@ -226,18 +238,29 @@ class BoundaryViewTestCase(AshlarAPITestCase):
         self.assertIsNotNone(response.data['errors'])
         self.assertEqual(response.data['status'], Boundary.StatusTypes.ERROR)
 
-    # TODO: this test started failing for some reason -- need to figure out why
-    #
-    # def test_geojson_response(self):
-    #     """ Create shape, then test that geojson serializes out properly """
-    #     response = self.post_boundary('bayarea_macosx.zip')
-    #     uuid = response.data['uuid']
-    #
-    #     url = '{}geojson/'.format(reverse('boundary-detail', args=[uuid]))
-    #     response = self.client.get(url)
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     self.assertEqual(response.data['type'], 'FeatureCollection')
-    #     self.assertEqual(len(response.data['features']), 3)
+    def test_uniqueness_constraint(self):
+        """Test that uploading a boundary that already exists will fail."""
+        # Upload the shapefile a first time and confirm that it works.
+        first_response = self.post_boundary('philly.zip')
+        self.assertEqual(first_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(first_response.data['status'], Boundary.StatusTypes.COMPLETE)
+
+        # Upload the shapefile a second time and confirm that an error is raised.
+        error_response = self.post_boundary('philly.zip')
+        self.assertEqual(error_response.status_code, status.HTTP_409_CONFLICT)
+        self.assertIsNotNone(error_response.data['error'])
+        self.assertEqual(error_response.data['error'], 'uniqueness constraint violation')
+
+    def test_geojson_response(self):
+        """ Create shape, then test that geojson serializes out properly """
+        response = self.post_boundary('bayarea_macosx.zip')
+        uuid = response.data['uuid']
+        url = '{}geojson/'.format(reverse('boundary-detail', args=[uuid]))
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['type'], 'FeatureCollection')
+        self.assertEqual(len(response.data['features']), 3)
 
 
 class BoundaryPolygonViewTestCase(AshlarAPITestCase):

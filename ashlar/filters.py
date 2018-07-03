@@ -5,6 +5,7 @@ from django.contrib.gis.geos import GEOSGeometry
 from dateutil.parser import parse
 
 from django.core.exceptions import ImproperlyConfigured
+from django.contrib.gis.gdal.error import GDALException
 from django.db.models import Q
 
 from rest_framework.exceptions import ParseError, NotFound
@@ -24,7 +25,16 @@ class RecordFilter(GeoFilterSet):
     def filter_polygon(self, queryset, geojson):
         """ Method filter for arbitrary polygon, sent in as geojson.
         """
-        poly = GEOSGeometry(geojson)
+        try:
+            poly = GEOSGeometry(geojson)
+        except GDALException as e:
+            raise ParseError('Failed to parse geometry: ' + str(e))
+
+        # In practically all cases, Django's GEOSGeometry object will throw a
+        # GDALException when it attempts to parse an invalid GeoJSON object.
+        # However, the docs reccommend using the `valid` and `valid_reason`
+        # attributes to check the validity of the input geometries. Support
+        # both validity checks here.
         if poly.valid:
             return queryset.filter(geom__intersects=poly)
         else:
@@ -132,6 +142,11 @@ class DateRangeFilterBackend(BaseFilterBackend):
 
     FIELD = 'occurred_from'
 
+    # This message will be formatted by ParseError, which creates a string like
+    # "<parameter> must be <ERR_MSG>". This accounts for the slightly strange
+    # wording of the error.
+    ERR_MSG = 'ISO 8601 formatted with timezone information. Please check that the URL is properly encoded.'
+
     def filter_queryset(self, request, queryset, view):
         """Filter records by date
 
@@ -146,22 +161,21 @@ class DateRangeFilterBackend(BaseFilterBackend):
         """
         occurred_min = 'occurred_min'
         occurred_max = 'occurred_max'
-        err_msg = 'must be ISO 8601 formatted with timezone information. Please check that the URL is properly encoded.'
         if occurred_min not in request.query_params and occurred_max not in request.query_params:
             return queryset
 
         try:
             min_date = parse(request.query_params.get(occurred_min, self.MIN_DATETIME))
         except:
-            raise QueryParameterException(occurred_min, err_msg)
+            raise QueryParameterException(occurred_min, self.ERR_MSG)
 
         try:
             max_date = parse(request.query_params.get(occurred_max, self.MAX_DATETIME))
         except:
-            raise QueryParameterException(occurred_max, err_msg)
+            raise QueryParameterException(occurred_max, self.ERR_MSG)
 
         if not min_date.tzinfo or not max_date.tzinfo:
-            raise QueryParameterException('datetimes', err_msg)
+            raise QueryParameterException('datetimes', self.ERR_MSG)
 
         return queryset.filter(occurred_from__gte=min_date, occurred_from__lte=max_date)
 

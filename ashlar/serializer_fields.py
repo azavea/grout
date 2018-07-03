@@ -1,3 +1,4 @@
+from six import iteritems
 from django.core.exceptions import ValidationError
 from django.contrib.gis.geos import GEOSGeometry
 
@@ -68,7 +69,7 @@ class MethodTransformJsonField(Field):
         """
         transform_method = getattr(self.parent, self.transform_method_name)
         representation = {}
-        for key, val in value.viewitems():
+        for key, val in iteritems(value):
             try:
                 (new_key, new_val) = transform_method(key, val)
                 representation[new_key] = new_val

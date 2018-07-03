@@ -36,7 +36,8 @@ setup(
         'python-dateutil >=2.4.2',
         'PyYAML >=3.11',
         'pytz >=2015.7',
-        'requests >=2.8.1'
+        'requests >=2.8.1',
+        'six >= 1.1.0'
     ],
     extras_require={
         'dev': [],
