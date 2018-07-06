@@ -137,7 +137,7 @@ class RecordQueryTestCase(TestCase):
 
     def test_record_type_filter(self):
         """ Test filtering by record type """
-        queryset = self.filter_backend.filter_record_type(self.queryset, self.id_type.uuid)
+        queryset = self.filter_backend.filter_record_type(self.queryset, 'schema', self.id_type.uuid)
         self.assertEqual(len(queryset), 2)
         self.assertEqual(queryset[0].schema, self.id_schema)
 
@@ -146,7 +146,7 @@ class RecordQueryTestCase(TestCase):
         filter_backend = RecordTypeFilter()
         record_types = RecordType.objects.all()
 
-        queryset = filter_backend.type_for_record(record_types, self.id_record_1.uuid)
+        queryset = filter_backend.type_for_record(record_types, 'pk', self.id_record_1.uuid)
 
         self.assertEqual(queryset.count(), 1)
 
@@ -163,15 +163,15 @@ class RecordQueryTestCase(TestCase):
             geom=MultiPolygon(Polygon(((1, 1), (2, 1), (2, 2), (1, 2), (1, 1))))
         )
         # Test a geometry that contains the records
-        queryset = self.filter_backend.filter_polygon_id(self.queryset, contains0_0.pk)
+        queryset = self.filter_backend.filter_polygon_id(self.queryset, 'geom', contains0_0.pk)
         self.assertEqual(queryset.count(), 4)
 
         # Test a geometry that does not contain any of the records
-        queryset = self.filter_backend.filter_polygon_id(self.queryset, no_contains0_0.pk)
+        queryset = self.filter_backend.filter_polygon_id(self.queryset, 'geom', no_contains0_0.pk)
         self.assertEqual(queryset.count(), 0)
 
         # Test leaving out an ID
-        queryset = self.filter_backend.filter_polygon_id(self.queryset, None)
+        queryset = self.filter_backend.filter_polygon_id(self.queryset, 'geom', None)
         self.assertEqual(queryset.count(), 4)
 
     def test_valid_polygon_fiter(self):
@@ -181,7 +181,7 @@ class RecordQueryTestCase(TestCase):
             'type': 'Polygon',
             'coordinates': [[[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]]]
         })
-        queryset = self.filter_backend.filter_polygon(self.queryset, contains0_0)
+        queryset = self.filter_backend.filter_polygon(self.queryset, 'geom', contains0_0)
         self.assertEqual(queryset.count(), 4)
 
         # Test a geometry that does not contain the records.
@@ -189,7 +189,7 @@ class RecordQueryTestCase(TestCase):
             'type': 'Polygon',
             'coordinates': [[[1, 1], [1, 2], [2, 2], [2, 1], [1, 1]]]
         })
-        queryset = self.filter_backend.filter_polygon(self.queryset, no_contains0_0)
+        queryset = self.filter_backend.filter_polygon(self.queryset, 'geom', no_contains0_0)
         self.assertEqual(queryset.count(), 0)
 
     def test_polygon_filter_parse_error(self):
@@ -200,7 +200,7 @@ class RecordQueryTestCase(TestCase):
         })
 
         with self.assertRaises(ParseError):
-            queryset = self.filter_backend.filter_polygon(self.queryset, invalid_geojson)
+            queryset = self.filter_backend.filter_polygon(self.queryset, 'geom', invalid_geojson)
 
     def test_invalid_polygon_filter(self):
         """Test that filtering by an invalid GeoJSON polygon raises an error."""
@@ -221,7 +221,7 @@ class RecordQueryTestCase(TestCase):
             })
 
             with self.assertRaises(ParseError) as e:
-                queryset = self.filter_backend.filter_polygon(self.queryset, geojson)
+                queryset = self.filter_backend.filter_polygon(self.queryset, 'geom', geojson)
 
 
 class BoundaryPolygonQueryTestCase(TestCase):
@@ -252,6 +252,6 @@ class BoundaryPolygonQueryTestCase(TestCase):
 
     def test_boundary_filter(self):
         """ Test filtering by boundary """
-        queryset = self.filter_backend.filter_boundary(self.queryset, self.boundary_1.uuid)
+        queryset = self.filter_backend.filter_boundary(self.queryset, 'status', self.boundary_1.uuid)
         self.assertEqual(len(queryset), 1)
         self.assertEqual(queryset[0].boundary, self.boundary_1)

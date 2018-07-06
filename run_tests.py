@@ -17,6 +17,14 @@ def create_extension_postgis():
 
 if __name__ == '__main__':
     from django.core.management import execute_from_command_line
+
+    if django.VERSION <= (1, 11):
+        msg = ("This package requires Django >= 1.11, but you're running version " +
+               str(django.get_version()) + '. Please upgrade Django.')
+        raise RuntimeError(msg)
+
+    django.setup()
+
     try:
         create_extension_postgis()
     except django.db.utils.OperationalError:

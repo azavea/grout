@@ -6,8 +6,8 @@ import mock
 from django.test import TestCase
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
+from django.http import HttpRequest
 
-from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from ashlar.models import Record, RecordSchema, RecordType
@@ -74,19 +74,19 @@ class DateFilterBackendTestCase(TestCase):
         """ Test filtering on dates """
         self.assertEqual(len(self.queryset), 1)
 
-        req1 = Request(self.factory.get('/foo/', {'occurred_max': self.a_date}))
+        req1 = self.factory.get('/foo/', {'occurred_max': self.a_date})
         force_authenticate(req1, self.user)
         res1 = self.view(req1).render()
         self.assertEqual(json.loads(res1.content.decode('utf-8'))['count'], 1)
 
-        req2 = Request(self.factory.get('/foo/', {'occurred_max': self.a_later_date}))
+        req2 = self.factory.get('/foo/', {'occurred_max': self.a_later_date})
         force_authenticate(req2, self.user)
         res2 = self.view(req2).render()
         self.assertEqual(json.loads(res2.content.decode('utf-8'))['count'], 2)
 
     def test_missing_min_max(self):
         """Test that forgetting both `occurred_min` and `occurred_max` returns all records."""
-        missing_range_req = Request(self.factory.get('/foo/'))
+        missing_range_req = self.factory.get('/foo/')
         force_authenticate(missing_range_req, self.user)
         missing_range_res = self.view(missing_range_req).render()
 
@@ -95,7 +95,7 @@ class DateFilterBackendTestCase(TestCase):
     def test_missing_timezone(self):
         """Test that forgetting timezone information raises an error."""
         date_no_time = '2015-01-01'
-        missing_tz_req = Request(self.factory.get('/foo/', {'occurred_max': date_no_time}))
+        missing_tz_req = self.factory.get('/foo/', {'occurred_max': date_no_time})
         force_authenticate(missing_tz_req, self.user)
         missing_tz_res = self.view(missing_tz_req).render()
 
@@ -105,7 +105,7 @@ class DateFilterBackendTestCase(TestCase):
     def test_range_parse_errors(self):
         """Test that parse errors get thrown when the date range is improperly formatted."""
         # Test a bad `occurred_min` parameter.
-        bad_min_req = Request(self.factory.get('/foo/', {'occurred_min': 'foobarbaz'}))
+        bad_min_req = self.factory.get('/foo/', {'occurred_min': 'foobarbaz'})
         force_authenticate(bad_min_req, self.user)
         bad_min_res = self.view(bad_min_req).render()
 
@@ -113,7 +113,7 @@ class DateFilterBackendTestCase(TestCase):
         self.assertEqual(str(json.loads(bad_min_res.content.decode('utf-8'))['detail']), msg)
 
         # Test a bad `occurred_max` parameter.
-        bad_max_req = Request(self.factory.get('/foo/', {'occurred_max': 'foobarbaz'}))
+        bad_max_req = self.factory.get('/foo/', {'occurred_max': 'foobarbaz'})
         force_authenticate(bad_max_req, self.user)
         bad_max_res = self.view(bad_max_req).render()
 

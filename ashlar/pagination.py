@@ -1,4 +1,4 @@
-from rest_framework.pagination import LimitOffsetPagination, _get_count, _positive_int
+from rest_framework.pagination import LimitOffsetPagination, _positive_int
 
 
 class OptionalLimitOffsetPagination(LimitOffsetPagination):
@@ -13,7 +13,7 @@ class OptionalLimitOffsetPagination(LimitOffsetPagination):
             return None
 
         self.offset = self.get_offset(request)
-        self.count = _get_count(queryset)
+        self.count = self.get_count(queryset)
 
         # when requesting all records, set the limit to one more than the queryset count
         if self.limit == 'all':

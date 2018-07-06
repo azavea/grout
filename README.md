@@ -9,37 +9,46 @@
 [djsonb](https://github.com/azavea/djsonb); currently the best way
 to develop on Ashlar is to set up a DRIVER VM and use that.**
 
-
 ## Testing
 
-1. Install [docker](http://docs.docker.com/installation/ubuntulinux/) and
-   [docker-compose](https://docs.docker.com/compose/install/)
-2. From the root project directory, run `docker-compose run test` (or `docker-compose
-   up`). You may need to use sudo depending on how you've configured Docker.
+### Requirements
 
-You should expect to see duplicate key errors from the db container; these are generated
+- [Docker](http://docs.docker.com/installation/ubuntulinux/)
+- [docker-compose](https://docs.docker.com/compose/install/)
+
+### Running tests
+
+Use the `scripts/test` script to run tests:
+
+```
+./scripts/test
+```
+
+This will run a matrix of tests for **every supported version of Python and
+Django**. If you're developing locally and you just want to run tests once, you
+can specify the version you want to run: 
+
+```
+# Only run tests for Python 2.7 and Django 1.8
+./scripts/test app py27-django18
+```
+
+For a list of available versions, see the `envlist` directive in the [`tox.ini`
+file](./tox.ini). 
+
+To clean up stopped containers and virtualenvs, use the `clean` script:
+
+```
+./scripts/clean
+```
+
+### Notes on test execution
+
+- You might see duplicate key errors from the db container; these are generated
 deliberately by the test suite and can be safely ignored.
 
-If you encounter connection-refused errors, try re-running the test command;
-docker-compose will launch the postgres container first, but sometimes postgres doesn't
-become available quickly enough for Django to connect to it. Re-running will usually work.
-
-If your tests crash and leave a `test_postgres` database lying around that prevents you
+- If your tests crash and leave a `test_postgres` database lying around that prevents you
 from running further tests, the simplest solution is to run `docker-compose rm db`, which
-will delete the database container and refresh it from the base image. You may also be
-able to run tests interactively by running `docker-compose run test python
-/opt/ashlar/run_tests.py`, which would allow you to manually delete the database when
-prompted.
-
-
-## Testing on OSX
-
-1. Install docker toolbox (https://www.docker.com/toolbox).
-2. Run a terminal window through Docker Quickstart Terminal and create a docker machine for ashlar:
-`docker-machine create ashlar -d virtualbox`
-3. Start the virtualbox VM:
-`docker-machine start ashlar`
-
-If you see Started machines may have new IP addresses. You may need to re-run the docker-machine env command in the terminal: `eval "$(docker-machine env mub-monitor)"`
-4. Finally, to run tests, `docker-compose run test`
-
+will delete the database container and refresh it from the base image. You can
+also delete the database container in a shell prompt when running
+`./scripts/test` again after a crash.

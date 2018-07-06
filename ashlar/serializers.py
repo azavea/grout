@@ -128,6 +128,7 @@ class RecordSerializer(GeoModelSerializer):
 
     class Meta:
         model = Record
+        fields = '__all__'
         read_only_fields = ('uuid',)
 
 
@@ -137,6 +138,7 @@ class RecordTypeSerializer(ModelSerializer):
 
     class Meta:
         model = RecordType
+        fields = '__all__'
 
     def get_current_schema(self, obj):
         current_schema = obj.get_current_schema()
@@ -170,6 +172,7 @@ class RecordSchemaSerializer(SchemaSerializer):
 
     class Meta:
         model = RecordSchema
+        fields = '__all__'
         read_only_fields = ('uuid', 'next_version')
 
 
@@ -215,3 +218,4 @@ class BoundarySerializer(GeoModelSerializer):
         # e.g. adding 'errors' to this tuple has no effect, since we manually define the errors
         # field above
         read_only_fields = ('uuid', 'status',)
+        fields = '__all__'

@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Most reliable way to get the path for this script.
+# h/t: https://stackoverflow.com/questions/192292/bash-how-best-to-include-other-scripts/12694189#12694189
+DIR="${BASH_SOURCE%/*}"
+if [[ ! -d "$DIR" ]];
+then
+    DIR="$PWD"
+fi
+
+# Load common configs for this script.
+source "${DIR}/_config.sh"
+
+function usage() {
+    echo -n "Usage: $(basename "$0")
+
+Clean up unused Docker resources to free disk space.
+"
+}
+
+if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+    if [ "${1:-}" = "--help" ]; then
+        usage
+    else
+        # Remove any extra virtualenvs lying around
+        echo "Removing cached virtualenvs ..."
+        docker-compose run --rm --no-deps test rm -Rf /opt/ashlar/.tox/
+        echo "Cached virtualenvs removed!"
+
+        # Stop containers and shut down the network
+        docker-compose down
+
+        # Remove unused containers, images, and volumes
+        docker images -qf dangling=true | xargs -r docker rmi
+        docker volume ls -qf dangling=true | xargs -r docker volume rm
+        docker ps -a | grep Exit | cut -d ' ' -f 1 | xargs -r docker rm
+    fi
+fi

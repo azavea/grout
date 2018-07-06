@@ -5,7 +5,7 @@ from django.db import IntegrityError
 
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import detail_route
-from rest_framework.filters import DjangoFilterBackend
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework_gis.filters import InBBoxFilter
 

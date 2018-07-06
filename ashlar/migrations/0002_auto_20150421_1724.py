@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import django
 from django.db import models, migrations
 from ashlar.models import RecordSchema, Record
 
@@ -24,7 +25,10 @@ class Migration(migrations.Migration):
         # Both of these get_* functions return tuples of information; the
         # numbers are just the indexes of the information we want, which is a
         # Field instance and the db column name, respectively.
-        return cls._meta.get_field_by_name(fieldname)[0].get_attname_column()[1]
+        if django.VERSION <= (1, 8):
+            return cls._meta.get_field_by_name(fieldname)[0].get_attname_column()[1]
+        else:
+            return cls._meta.get_field(fieldname).get_attname_column()[1]
 
     operations = [
         # Records

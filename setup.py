@@ -2,8 +2,6 @@
 
 from setuptools import setup, find_packages
 
-tests_require = []
-
 
 def readme():
     with open('README.md') as f:
@@ -21,30 +19,22 @@ setup(
     license='MIT',
     keywords='gis jsonschema',
     packages=find_packages(exclude=['tests']),
-    dependency_links=[
-        'https://github.com/azavea/djsonb/tarball/develop#egg=djsonb-0.2.2'
-    ],
+    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
     install_requires=[
-        'Django ==1.8.6',
-        'djangorestframework >=3.1.1, <3.5.0',
-        'djangorestframework-gis >=0.8.1, <0.12.0',
-        'django-filter >=0.9.2, <0.14.0',
-        'djsonb >=0.2.2',
-        'jsonschema >=2.4.0',
-        'psycopg2 >=2.6',
+        'Django ~=1.11',
+        'djangorestframework >=3.8.0',
+        'djangorestframework-gis >=0.8.1',
+        'django-filter >=1.1.0',
         'django-extensions >=1.6.1',
+        'jsonschema >=2.4.0',
+        'psycopg2-binary >=2.6',
         'python-dateutil >=2.4.2',
+        'djsonb >= 0.2.3',
         'PyYAML >=3.11',
         'pytz >=2015.7',
         'requests >=2.8.1',
         'six >= 1.1.0'
     ],
-    extras_require={
-        'dev': [],
-        'test': tests_require
-    },
-    test_suite='tests',
-    tests_require=tests_require,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Topic :: Database',
@@ -60,10 +50,14 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2 :: Only',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Framework :: Django',
         'Framework :: Django :: 1.8',
+        'Framework :: Django :: 1.11',
+        'Framework :: Django :: 2.0',
         'Operating System :: OS Independent',
     ],
 )

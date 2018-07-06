@@ -1,0 +1,101 @@
+#!/bin/bash
+
+# Most reliable way to get the path for this script.
+# h/t: https://stackoverflow.com/questions/192292/bash-how-best-to-include-other-scripts/12694189#12694189
+DIR="${BASH_SOURCE%/*}"
+if [[ ! -d "$DIR" ]];
+then
+    DIR="$PWD"
+fi
+
+# Load common configs for this script.
+source "${DIR}/_config.sh"
+
+# Load database initialization procedure
+source "${DIR}/_init_db.sh"
+
+function usage() {
+    echo -n "Usage: $(basename "$0") [OPTION] [VERSIONS]
+Run tests.
+
+Options:
+    -h --help       Display this help text
+    git             Check git commit titles
+    app [VERSIONS]  Run tests for the app, optionally limited to Python/Django VERSIONS
+    <none>          Run all tests
+
+Versions:
+    When running tests for the app, you can limit the Python/Django versions you'd like
+    to test in order to speed up test execution. For example, the following command will only
+    run tests for Python 3.4 and Django 1.11:
+
+        ./scripts/test app py34-django111
+
+    To view available versions, see the envlist in the tox.ini file at the root of
+    this repo.
+"
+}
+
+function app_tests() {
+    echo "Testing the app..."
+    echo "-------------------------------------------------------------------"
+
+    init_db
+
+    if [ -z "$1" ]
+    then
+        # No arguments -- default to running all tests
+        docker-compose run --rm test tox
+    else
+        # Run tests for the environment that the user has passed in
+        docker-compose run --rm test tox -e "$1"
+    fi
+
+    # Stop the database service so that containers aren't lying around
+    docker-compose stop db
+
+    echo "PASSED: app tests passed."
+
+}
+
+function git_tests() {
+    # Fail build if any commit title in this branch contains these words
+    echo "Making sure that all commits in this branch are clean..."
+    echo "-------------------------------------------------------------------"
+    if git log --oneline master.. | grep -wiE "fixup|squash|wip"
+    then
+        echo "FAILED: Illegal words in git commit:"
+        echo
+        echo $(git log --oneline master.. | grep -wiE "fixup|squash|wip")
+        echo
+        echo "Please squash these changes before merging."
+        exit 1
+    else
+        echo "PASSED: Git commits are clean."
+    fi
+}
+
+function all_tests() {
+    echo "Running all tests..."
+    echo "-------------------------------------------------------------------"
+    app_tests
+    echo "-------------------------------------------------------------------"
+    git_tests
+    echo "-------------------------------------------------------------------"
+    echo "PASSED: All tests passed."
+}
+
+if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+    if [ -z "$1" ]
+    then
+        # If no arguments are supplied, run app tests.
+        all_tests
+    else
+        case "${1:-}" in
+            -h|--help) usage ;;
+            git)       git_tests ;;
+            app)       shift 1 && app_tests "$@" ;;
+            *)         usage ;;
+        esac
+    fi
+fi
