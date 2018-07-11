@@ -3,13 +3,13 @@ from __future__ import unicode_literals
 
 import django
 from django.db import models, migrations
-from ashlar.models import RecordSchema, Record
+from grout.models import RecordSchema, Record
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ashlar', '0001_initial'),
+        ('grout', '0001_initial'),
     ]
 
     create_gin_index_sql = 'CREATE INDEX {index_name} ON {table} USING gin({column})'
@@ -32,13 +32,13 @@ class Migration(migrations.Migration):
 
     operations = [
         # Records
-        migrations.RunSQL(create_gin_index_sql.format(index_name='ashlar_record_data_gin',
+        migrations.RunSQL(create_gin_index_sql.format(index_name='grout_record_data_gin',
                                                       table=Record._meta.db_table,
                                                       column=_get_field_db_column(Record, 'data')),
-                          drop_gin_index_sql.format(index_name='ashlar_record_data_gin')),
+                          drop_gin_index_sql.format(index_name='grout_record_data_gin')),
         # RecordSchema
-        migrations.RunSQL(create_gin_index_sql.format(index_name='ashlar_recordschema_schema_gin',
+        migrations.RunSQL(create_gin_index_sql.format(index_name='grout_recordschema_schema_gin',
                                                       table=RecordSchema._meta.db_table,
                                                       column=_get_field_db_column(RecordSchema, 'schema')),
-                          drop_gin_index_sql.format(index_name='ashlar_recordschema_schema_gin')),
+                          drop_gin_index_sql.format(index_name='grout_recordschema_schema_gin')),
     ]

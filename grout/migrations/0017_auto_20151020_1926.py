@@ -7,13 +7,13 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ashlar', '0011_auto_20150505_1941'),
+        ('grout', '0016_auto_20151016_1951'),
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='recordtype',
-            name='active',
-            field=models.BooleanField(default=True),
+        migrations.RenameField(
+            model_name='record',
+            old_name='nominatim',
+            new_name='location_text',
         ),
     ]

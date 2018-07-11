@@ -6,8 +6,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.test import APITestCase
 
 
-class AshlarAPITestCase(APITestCase):
-    """ Extend api client for ashlar specific test code
+class GroutAPITestCase(APITestCase):
+    """ Extend api client for grout-specific test code
 
     Adds some helper fields to the TestCase instance:
      - user: superuser django django.contrib.auth.models.User object
@@ -19,13 +19,13 @@ class AshlarAPITestCase(APITestCase):
 
     """
     def setUp(self):
-        super(AshlarAPITestCase, self).setUp()
+        super(GroutAPITestCase, self).setUp()
 
         try:
             self.user = User.objects.get(username='admin')
         except ObjectDoesNotExist:
             self.user = User.objects.create_user('admin',
-                                                 'ashlar@azavea.com',
+                                                 'grout@azavea.com',
                                                  '123')
             self.user.is_superuser = True
             self.user.is_staff = True
@@ -37,4 +37,4 @@ class AshlarAPITestCase(APITestCase):
         self.files_dir = os.path.join('tests', 'files')
 
     def tearDown(self):
-        super(AshlarAPITestCase, self).tearDown()
+        super(GroutAPITestCase, self).tearDown()

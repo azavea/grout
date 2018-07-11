@@ -1,9 +1,9 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from ashlar.serializer_fields import (JsonBField, JsonSchemaField, MethodTransformJsonField,
-                                      DropJsonKeyException)
-from ashlar.validators import validate_json_schema
+from grout.serializer_fields import (JsonBField, JsonSchemaField, MethodTransformJsonField,
+                                     DropJsonKeyException)
+from grout.validators import validate_json_schema
 
 
 class SerializerJsonBFieldTestCase(TestCase):

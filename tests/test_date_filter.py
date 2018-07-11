@@ -10,9 +10,9 @@ from django.http import HttpRequest
 
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from ashlar.models import Record, RecordSchema, RecordType
-from ashlar.views import RecordViewSet
-from ashlar.filters import DateRangeFilterBackend
+from grout.models import Record, RecordSchema, RecordType
+from grout.views import RecordViewSet
+from grout.filters import DateRangeFilterBackend
 
 
 class DateFilterBackendTestCase(TestCase):
@@ -23,7 +23,7 @@ class DateFilterBackendTestCase(TestCase):
             self.user = User.objects.get(username='admin')
         except ObjectDoesNotExist:
             self.user = User.objects.create_user('admin',
-                                                 'ashlar@azavea.com',
+                                                 'grout@azavea.com',
                                                  '123')
 
         self.factory = APIRequestFactory()

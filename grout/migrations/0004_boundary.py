@@ -10,7 +10,7 @@ import django.contrib.gis.db.models.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ashlar', '0003_auto_20150422_1310'),
+        ('grout', '0003_auto_20150422_1310'),
     ]
 
     operations = [

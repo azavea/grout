@@ -1,5 +1,5 @@
 """
-Django settings for use when testing Ashlar
+Django settings for use when testing Grout
 """
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -26,7 +26,7 @@ INSTALLED_APPS = (
     'django_filters',
     'django_extensions',
 
-    'ashlar'
+    'grout'
 )
 
 MIDDLEWARE_CLASSES = (
@@ -40,7 +40,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.security.SecurityMiddleware',
 )
 
-ROOT_URLCONF = 'ashlar.urls'
+ROOT_URLCONF = 'grout.urls'
 
 DATABASES = {
     'default': {
@@ -80,7 +80,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
 }
 
-ASHLAR = {
+GROUT = {
     # It is suggested to change this if you know that your data will be limited to
     # a certain part of the world, for example to a UTM Grid projection or a state
     # plane.

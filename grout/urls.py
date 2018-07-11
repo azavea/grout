@@ -4,9 +4,9 @@ from django.contrib import admin
 
 from rest_framework import routers
 
-from ashlar import views
+from grout import views
 
-# To get a default set of views, just include ashlar.urls.urlpatterns in your main app's urls.py
+# To get a default set of views, just include grout.urls.urlpatterns in your main app's urls.py
 router = routers.DefaultRouter()
 router.register('boundaries', views.BoundaryViewSet)
 router.register('boundarypolygons', views.BoundaryPolygonViewSet)

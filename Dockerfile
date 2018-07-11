@@ -1,5 +1,5 @@
-# Docker image for testing Ashlar -- installs pyenv, tox, and the OS-level
-# dependencies needed to run Ashlar
+# Docker image for testing Grout -- installs pyenv, tox, and the OS-level
+# dependencies needed to run Grout
 FROM debian:jessie-slim
 
 RUN apt-get update
@@ -54,7 +54,7 @@ RUN pip install tox tox-pyenv
 # Make Python versions available from the shell (e.g. $ python3.4)
 RUN pyenv local $PYVERSIONS
 
-# Install Ashlar OS-level dependencies
+# Install Grout OS-level dependencies
 # Note that the version of GDAL installed in the OS is important -- Django 1.8
 # is incompatible with GDAL 2.0+, which introduced 64-bit integers that can throw
 # errors since Django is not prepared to handle them. The slim-jessie image
@@ -66,8 +66,8 @@ RUN apt-get -y autoremove && \
                        libproj-dev \
                        gdal-bin
 
-COPY . /opt/ashlar
-WORKDIR /opt/ashlar
+COPY . /opt/grout
+WORKDIR /opt/grout
 
 # Run tox to test all Python versions
 CMD ["tox"]

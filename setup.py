@@ -8,14 +8,14 @@ def readme():
         return f.read()
 
 setup(
-    name='ashlar',
+    name='grout',
     version='1.0.0',
     author='Azavea, Inc.',
     author_email='info@azavea.com',
     description='A flexible schema framework for geospatial data.',
     long_description=readme(),
     long_description_content_type='text/markdown',
-    url='https://github.com/azavea/ashlar',
+    url='https://github.com/azavea/grout',
     license='MIT',
     keywords='gis jsonschema',
     packages=find_packages(exclude=['tests']),

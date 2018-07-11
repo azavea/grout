@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.contrib.gis.geos import Polygon, MultiPolygon
 
-from ashlar.serializer_fields import GeomBBoxField
+from grout.serializer_fields import GeomBBoxField
 
 
 class GeomBBoxFieldTestCase(TestCase):

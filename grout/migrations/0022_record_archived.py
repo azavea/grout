@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ashlar', '0016_auto_20151016_1951'),
+        ('grout', '0021_add_weather_fields'),
     ]
 
     operations = [
-        migrations.RenameField(
+        migrations.AddField(
             model_name='record',
-            old_name='nominatim',
-            new_name='location_text',
+            name='archived',
+            field=models.BooleanField(default=False),
         ),
     ]

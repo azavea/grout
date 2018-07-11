@@ -12,6 +12,6 @@ services:
     depends_on:
       - db
     volumes:
-      - .:/opt/ashlar
+      - .:/opt/grout
     environment:
       - PYTHONUNBUFFERED=0  # Do not buffer output (allows Docker to stream stdout)

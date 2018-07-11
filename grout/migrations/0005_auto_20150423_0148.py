@@ -7,7 +7,7 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ashlar', '0004_boundary'),
+        ('grout', '0004_boundary'),
     ]
 
     operations = [

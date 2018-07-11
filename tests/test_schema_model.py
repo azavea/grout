@@ -2,7 +2,7 @@ from django.test import TestCase
 
 import jsonschema
 
-from ashlar.models import RecordSchema, SchemaModel
+from grout.models import RecordSchema, SchemaModel
 
 
 class SchemaModelTestCase(TestCase):

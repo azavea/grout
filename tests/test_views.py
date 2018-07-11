@@ -6,12 +6,12 @@ from django.contrib.gis.geos import Polygon, LinearRing, MultiPolygon
 
 from rest_framework import status
 
-from tests.api_test_case import AshlarAPITestCase
-from ashlar.models import (Boundary, BoundaryPolygon,
-                           RecordSchema, RecordType)
+from tests.api_test_case import GroutAPITestCase
+from grout.models import (Boundary, BoundaryPolygon,
+                          RecordSchema, RecordType)
 
 
-class RecordSchemaViewTestCase(AshlarAPITestCase):
+class RecordSchemaViewTestCase(GroutAPITestCase):
 
     def setUp(self):
         super(RecordSchemaViewTestCase, self).setUp()
@@ -89,7 +89,7 @@ class RecordSchemaViewTestCase(AshlarAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED, response.content)
 
 
-class RecordTypeViewTestCase(AshlarAPITestCase):
+class RecordTypeViewTestCase(GroutAPITestCase):
 
     def setUp(self):
         super(RecordTypeViewTestCase, self).setUp()
@@ -146,7 +146,7 @@ class RecordTypeViewTestCase(AshlarAPITestCase):
                          response_data)
 
 
-class BoundaryViewTestCase(AshlarAPITestCase):
+class BoundaryViewTestCase(GroutAPITestCase):
 
     def setUp(self):
         super(BoundaryViewTestCase, self).setUp()
@@ -263,7 +263,7 @@ class BoundaryViewTestCase(AshlarAPITestCase):
         self.assertEqual(len(response.data['features']), 3)
 
 
-class BoundaryPolygonViewTestCase(AshlarAPITestCase):
+class BoundaryPolygonViewTestCase(GroutAPITestCase):
     def setUp(self):
         boundary = Boundary.objects.create(label='fooOK', source_file='foo.zip',
                                            status=Boundary.StatusTypes.COMPLETE)
