@@ -24,7 +24,7 @@ setup(
         'Django ~=1.11',
         'djangorestframework >=3.8.0',
         'djangorestframework-gis >=0.8.1',
-        'django-filter >=1.1.0',
+        'django-filter >=1.1.0,<2.0.0',
         'django-extensions >=1.6.1',
         'jsonschema >=2.4.0',
         'psycopg2-binary >=2.6',
