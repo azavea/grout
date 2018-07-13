@@ -8,7 +8,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ashlar', '0010_auto_20150505_1940'),
+        ('grout', '0010_auto_20150505_1940'),
     ]
 
     operations = [
@@ -41,7 +41,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='recordschema',
             name='record_type',
-            field=models.ForeignKey(related_name='schemas', to='ashlar.RecordType'),
+            field=models.ForeignKey(related_name='schemas', to='grout.RecordType'),
         ),
         migrations.AlterUniqueTogether(
             name='recordschema',

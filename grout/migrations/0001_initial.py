@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='record',
             name='schema_id',
-            field=models.ForeignKey(to='ashlar.RecordSchema'),
+            field=models.ForeignKey(to='grout.RecordSchema'),
         ),
         migrations.AlterUniqueTogether(
             name='itemschema',

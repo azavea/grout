@@ -1,13 +1,13 @@
-# ashlar
+# Grout 
 
-[![Build Status](https://travis-ci.org/azavea/ashlar.svg?branch=develop)](https://travis-ci.org/azavea/ashlar)
+[![Build Status](https://travis-ci.org/azavea/grout.svg?branch=develop)](https://travis-ci.org/azavea/grout)
 
 ## Developing
 
-**Ashlar is under heavy development in tandem with
+**Grout is under heavy development in tandem with
 [DRIVER](https://github.com/WorldBank-Transport/DRIVER) and
 [djsonb](https://github.com/azavea/djsonb); currently the best way
-to develop on Ashlar is to set up a DRIVER VM and use that.**
+to develop on Grout is to set up a DRIVER VM and use that.**
 
 ## Testing
 

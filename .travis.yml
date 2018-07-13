@@ -23,18 +23,18 @@ deploy:
     user: azavea
     skip_existing: true
     password:
-      secure: iP4WfDokE1JImVAw4udpnc5ZRvyXsMM4xLGWFNJ8dX13SOP5eCGXhghhKRIKOW84t1upb396+FYZX0IXO+kWlYa1Lzvry3x3fXLBQryRZtQ7Pf97e/EYn2IzjngxQ7mwg6qe2MaH4GS2cGMs9/6UYaXwqr0Ro2d0zBEQ4yV1Z8U=
+      secure: gVivn0yuENFhivdr7ZbE6WQc8SNa9ocWph2UWdfhPLXxpzGivjTJmHNHyU+8VyXqD25rxLDm6KYFOgxKKzdjBsNvle9Jw4DvJkVnO06RJiYJK8SYAE5HElowRpBHu1UNTjh86U1YI6StRsvJGB8zogAshHhhQmpGsmNICkuQc1VCJJHtTOYVLsIVJodAAc98BfR2u+4guz6h3MVjWgIUhk+kqVMv9oq87ryPlWxu5A2w3ZP+abLFdZ2cXLNsx8ZIzmAEYgCOcJkX17Q4mTNWX7kfOy7hYT3TlQhAK90i5qvIlkZmGy6NCuLV3ToxEyGvY4tTqRs4WvWgf3+4P2DblCVbMwednnNunS1cu64FD8Jll3KGV83vWvnJRCF4LgI80E/WN+1T6EbQU71NLb+JDyZsT0UiCFAMoGu+jdg4iqKP3Y5GyOd7ozlhXfoCl+uNHmOaO/idtt2FVSL3+vSMbu1HWsXST2sX1ojOM9OVRoiebxPVzCUDYyc/Z1OMHfp/S8xbGFhjhPwFXTBJ3xzUzCyWUme5oeJhKJuQPXBPXr2yyaUyVIobmBaJnhXPI/1N666tLihYYpNzgs7l5ZNllA0By3KQ9kZjN/WcOlELjnOVlUUNOI9b9b0FvjvFjKrKt2No4VXihRN0VeamZolpO02Kt+mnvcPRpVSKKUqEtGA=
     on:
       distributions: sdist bdist_wheel
-      repo: azavea/ashlar
+      repo: azavea/grout
       branch: master
   - provider: pypi
-    server: https://test.pypi.org/legacy/
     user: azavea
     skip_existing: true
+    server: https://test.pypi.org/legacy/
     password:
-      secure: iP4WfDokE1JImVAw4udpnc5ZRvyXsMM4xLGWFNJ8dX13SOP5eCGXhghhKRIKOW84t1upb396+FYZX0IXO+kWlYa1Lzvry3x3fXLBQryRZtQ7Pf97e/EYn2IzjngxQ7mwg6qe2MaH4GS2cGMs9/6UYaXwqr0Ro2d0zBEQ4yV1Z8U=
+      secure: gVivn0yuENFhivdr7ZbE6WQc8SNa9ocWph2UWdfhPLXxpzGivjTJmHNHyU+8VyXqD25rxLDm6KYFOgxKKzdjBsNvle9Jw4DvJkVnO06RJiYJK8SYAE5HElowRpBHu1UNTjh86U1YI6StRsvJGB8zogAshHhhQmpGsmNICkuQc1VCJJHtTOYVLsIVJodAAc98BfR2u+4guz6h3MVjWgIUhk+kqVMv9oq87ryPlWxu5A2w3ZP+abLFdZ2cXLNsx8ZIzmAEYgCOcJkX17Q4mTNWX7kfOy7hYT3TlQhAK90i5qvIlkZmGy6NCuLV3ToxEyGvY4tTqRs4WvWgf3+4P2DblCVbMwednnNunS1cu64FD8Jll3KGV83vWvnJRCF4LgI80E/WN+1T6EbQU71NLb+JDyZsT0UiCFAMoGu+jdg4iqKP3Y5GyOd7ozlhXfoCl+uNHmOaO/idtt2FVSL3+vSMbu1HWsXST2sX1ojOM9OVRoiebxPVzCUDYyc/Z1OMHfp/S8xbGFhjhPwFXTBJ3xzUzCyWUme5oeJhKJuQPXBPXr2yyaUyVIobmBaJnhXPI/1N666tLihYYpNzgs7l5ZNllA0By3KQ9kZjN/WcOlELjnOVlUUNOI9b9b0FvjvFjKrKt2No4VXihRN0VeamZolpO02Kt+mnvcPRpVSKKUqEtGA=
     on:
       distributions: sdist bdist_wheel
-      repo: azavea/ashlar
+      repo: azavea/grout
       branch: develop

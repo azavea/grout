@@ -8,14 +8,14 @@ def readme():
         return f.read()
 
 setup(
-    name='ashlar',
+    name='grout',
     version='1.0.0',
     author='Azavea, Inc.',
     author_email='info@azavea.com',
     description='A flexible schema framework for geospatial data.',
     long_description=readme(),
     long_description_content_type='text/markdown',
-    url='https://github.com/azavea/ashlar',
+    url='https://github.com/azavea/grout',
     license='MIT',
     keywords='gis jsonschema',
     packages=find_packages(exclude=['tests']),
@@ -24,7 +24,7 @@ setup(
         'Django ~=1.11',
         'djangorestframework >=3.8.0',
         'djangorestframework-gis >=0.8.1',
-        'django-filter >=1.1.0',
+        'django-filter >=1.1.0,<2.0.0',
         'django-extensions >=1.6.1',
         'jsonschema >=2.4.0',
         'psycopg2-binary >=2.6',

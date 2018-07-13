@@ -11,8 +11,8 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from rest_framework_gis.serializers import GeoFeatureModelSerializer, GeoModelSerializer
 
-from ashlar.models import Boundary, BoundaryPolygon, Record, RecordType, RecordSchema
-from ashlar.serializer_fields import JsonBField, JsonSchemaField, GeomBBoxField
+from grout.models import Boundary, BoundaryPolygon, Record, RecordType, RecordSchema
+from grout.serializer_fields import JsonBField, JsonSchemaField, GeomBBoxField
 
 logger = logging.getLogger(__name__)
 

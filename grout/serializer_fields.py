@@ -4,7 +4,7 @@ from django.contrib.gis.geos import GEOSGeometry
 
 from rest_framework.fields import Field
 
-from ashlar.validators import validate_json_schema
+from grout.validators import validate_json_schema
 
 
 class JsonBField(Field):

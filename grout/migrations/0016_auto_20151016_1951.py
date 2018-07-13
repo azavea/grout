@@ -7,13 +7,13 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ashlar', '0002_auto_20150421_1724'),
+        ('grout', '0015_record_nominatim'),
     ]
 
     operations = [
-        migrations.RenameField(
+        migrations.AlterField(
             model_name='record',
-            old_name='schema_id',
-            new_name='schema',
+            name='nominatim',
+            field=models.CharField(max_length=200, null=True, blank=True),
         ),
     ]

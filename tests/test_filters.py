@@ -11,10 +11,10 @@ from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 from rest_framework.exceptions import ParseError
 
-from ashlar.filters import (BoundaryPolygonFilter, JsonBFilterBackend, RecordFilter,
-                            RecordTypeFilter)
-from ashlar.models import Boundary, BoundaryPolygon, Record, RecordSchema, RecordType
-from ashlar.views import BoundaryPolygonViewSet, RecordViewSet
+from grout.filters import (BoundaryPolygonFilter, JsonBFilterBackend, RecordFilter,
+                           RecordTypeFilter)
+from grout.models import Boundary, BoundaryPolygon, Record, RecordSchema, RecordType
+from grout.views import BoundaryPolygonViewSet, RecordViewSet
 
 
 class JsonBFilterViewSet(viewsets.ModelViewSet):
@@ -214,7 +214,7 @@ class RecordQueryTestCase(TestCase):
                 return ''
 
         # Patch GEOSGeometry so that the geometry is always invalid.
-        with mock.patch('ashlar.filters.GEOSGeometry', new_callable=MockGeometry):
+        with mock.patch('grout.filters.GEOSGeometry', new_callable=MockGeometry):
             geojson = json.dumps({
                 'type': 'Polygon',
                 'coordinates': [[[1, 1], [1, 2], [2, 2], [2, 1], [1, 1]]]

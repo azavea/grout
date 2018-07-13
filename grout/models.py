@@ -10,12 +10,12 @@ from django.core.validators import MinLengthValidator
 
 import jsonschema
 
-from ashlar.imports.shapefile import (extract_zip_to_temp_dir,
-                                      get_shapefiles_in_dir,
-                                      make_multipolygon)
+from grout.imports.shapefile import (extract_zip_to_temp_dir,
+                                     get_shapefiles_in_dir,
+                                     make_multipolygon)
 
 
-class AshlarModel(models.Model):
+class GroutModel(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
@@ -24,7 +24,7 @@ class AshlarModel(models.Model):
         abstract = True
 
 
-class SchemaModel(AshlarModel):
+class SchemaModel(GroutModel):
     version = models.PositiveIntegerField()
     schema = jsb.JsonBField()
     next_version = models.OneToOneField('self', related_name='previous_version', null=True,
@@ -52,12 +52,12 @@ class SchemaModel(AshlarModel):
         jsonschema.Draft4Validator.check_schema(schema)
 
 
-class Record(AshlarModel):
+class Record(GroutModel):
     """Spatiotemporal records -- e.g. Loch Ness Monster sightings, crime events, etc."""
     occurred_from = models.DateTimeField()
     occurred_to = models.DateTimeField()
 
-    geom = models.PointField(srid=settings.ASHLAR['SRID'])
+    geom = models.PointField(srid=settings.GROUT['SRID'])
     location_text = models.CharField(max_length=200, null=True, blank=True)
     city = models.CharField(max_length=50, null=True, blank=True)
     city_district = models.CharField(max_length=50, null=True, blank=True)
@@ -80,7 +80,7 @@ class Record(AshlarModel):
         ordering = ('-created',)
 
 
-class RecordType(AshlarModel):
+class RecordType(GroutModel):
     """ Store extra information for a given RecordType, associated schemas in RecordSchema """
     label = models.CharField(max_length=64)
     plural_label = models.CharField(max_length=64)
@@ -100,7 +100,7 @@ class RecordSchema(SchemaModel):
         unique_together = (('record_type', 'version'),)
 
 
-class Boundary(AshlarModel):
+class Boundary(GroutModel):
     """ MultiPolygon objects which contain related geometries for filtering/querying """
 
     class StatusTypes(object):
@@ -150,7 +150,7 @@ class Boundary(AshlarModel):
                 raise ValueError('Shapefile must include a .prj file')
             self.data_fields = boundary_layer.fields
             for feature in boundary_layer:
-                feature.geom.transform(settings.ASHLAR['SRID'])
+                feature.geom.transform(settings.GROUT['SRID'])
                 geometry = make_multipolygon(feature.geom)
                 data = {field: feature.get(field) for field in self.data_fields}
                 self.polygons.create(geom=geometry, data=data)
@@ -169,11 +169,11 @@ class Boundary(AshlarModel):
             shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-class BoundaryPolygon(AshlarModel):
+class BoundaryPolygon(GroutModel):
     """ Individual boundaries and associated data for each geom in a BoundaryUpload """
 
     boundary = models.ForeignKey('Boundary', related_name='polygons', null=True)
     data = jsb.JsonBField()
-    geom = models.MultiPolygonField(srid=settings.ASHLAR['SRID'])
+    geom = models.MultiPolygonField(srid=settings.GROUT['SRID'])
 
     objects = models.GeoManager()

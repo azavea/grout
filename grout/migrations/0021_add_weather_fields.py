@@ -7,7 +7,7 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ashlar', '0020_add_extra_nominatim_fields'),
+        ('grout', '0020_add_extra_nominatim_fields'),
     ]
 
     operations = [

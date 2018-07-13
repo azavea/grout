@@ -13,8 +13,8 @@ from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.filters import BaseFilterBackend
 from rest_framework_gis.filterset import GeoFilterSet
 
-from ashlar.models import Boundary, BoundaryPolygon, Record, RecordType
-from ashlar.exceptions import QueryParameterException
+from grout.models import Boundary, BoundaryPolygon, Record, RecordType
+from grout.exceptions import QueryParameterException
 
 from djsonb import fields as jsb
 
@@ -66,7 +66,7 @@ class RecordFilter(GeoFilterSet):
         # It would be preferable to do something like this to avoid loading the whole geometry into
         # Python, but this currently raises 'Complex expressions not supported for GeometryField'
         #return queryset.filter(geom__intersects=RawSQL(
-        #    'SELECT geom FROM ashlar_boundarypolygon WHERE uuid=%s', (poly_uuid,)
+        #    'SELECT geom FROM grout_boundarypolygon WHERE uuid=%s', (poly_uuid,)
         #))
 
     def filter_record_type(self, queryset, field_name, value):
