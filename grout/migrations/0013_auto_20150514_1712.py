@@ -8,7 +8,7 @@ import django.core.validators
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ashlar', '0012_recordtype_active'),
+        ('grout', '0012_recordtype_active'),
     ]
 
     operations = [

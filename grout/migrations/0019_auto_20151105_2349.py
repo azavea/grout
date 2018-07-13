@@ -7,16 +7,16 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ashlar', '0017_auto_20151020_1926'),
+        ('grout', '0018_auto_20151020_2114'),
     ]
 
     operations = [
         migrations.AlterModelOptions(
             name='boundary',
-            options={'ordering': ('display_field',)},
+            options={},
         ),
         migrations.AlterModelOptions(
             name='recordtype',
-            options={'ordering': ('plural_label',)},
+            options={},
         ),
     ]

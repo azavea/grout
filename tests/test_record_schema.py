@@ -1,7 +1,7 @@
 from django.db import IntegrityError, transaction
 from django.test import TestCase
 
-from ashlar.models import RecordSchema, RecordType
+from grout.models import RecordSchema, RecordType
 
 
 class RecordSchemaTestCase(TestCase):

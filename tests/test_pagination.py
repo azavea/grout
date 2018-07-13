@@ -1,13 +1,13 @@
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
-from ashlar.pagination import OptionalLimitOffsetPagination
-from ashlar.models import RecordType
+from grout.pagination import OptionalLimitOffsetPagination
+from grout.models import RecordType
 
-from tests.api_test_case import AshlarAPITestCase
+from tests.api_test_case import GroutAPITestCase
 
 
-class PaginationTestCase(AshlarAPITestCase):
+class PaginationTestCase(GroutAPITestCase):
 
     def setUp(self):
         super(PaginationTestCase, self).setUp()

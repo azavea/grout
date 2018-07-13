@@ -10,7 +10,7 @@ import django.contrib.gis.db.models.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ashlar', '0005_auto_20150423_0148'),
+        ('grout', '0005_auto_20150423_0148'),
     ]
 
     operations = [
@@ -49,6 +49,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='boundarypolygon',
             name='boundary',
-            field=models.ForeignKey(related_name='polygons', to='ashlar.Boundary', null=True),
+            field=models.ForeignKey(related_name='polygons', to='grout.Boundary', null=True),
         ),
     ]
