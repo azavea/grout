@@ -66,9 +66,6 @@ class Record(GroutModel):
     road = models.CharField(max_length=200, null=True, blank=True)
     state = models.CharField(max_length=50, null=True, blank=True)
 
-    weather = models.CharField(max_length=50, null=True, blank=True)
-    light = models.CharField(max_length=50, null=True, blank=True)
-
     schema = models.ForeignKey('RecordSchema')
     data = jsb.JsonBField()
 
