@@ -9,6 +9,23 @@
 [djsonb](https://github.com/azavea/djsonb); currently the best way
 to develop on Grout is to set up a DRIVER VM and use that.**
 
+### Making migrations
+
+If you edit the data model in `grout/models.py`, you'll need to create a new
+migration for the app. You can use the sample settings file in the `grout` repo to
+run [Django's `makemigrations`
+command](https://docs.djangoproject.com/en/dev/ref/django-admin/#django-admin-makemigrations): 
+
+```bash
+# Point django-admin to the sample settings file.
+export DJANGO_SETTINGS_MODULE=grout.settings_example
+
+# Generate new migrations.
+django-admin makemigrations
+```
+
+Make sure to register the new migrations file with Git. 
+
 ## Testing
 
 ### Requirements
