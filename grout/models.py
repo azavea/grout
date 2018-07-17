@@ -59,22 +59,11 @@ class Record(GroutModel):
 
     geom = models.PointField(srid=settings.GROUT['SRID'])
     location_text = models.CharField(max_length=200, null=True, blank=True)
-    city = models.CharField(max_length=50, null=True, blank=True)
-    city_district = models.CharField(max_length=50, null=True, blank=True)
-    county = models.CharField(max_length=50, null=True, blank=True)
-    neighborhood = models.CharField(max_length=50, null=True, blank=True)
-    road = models.CharField(max_length=200, null=True, blank=True)
-    state = models.CharField(max_length=50, null=True, blank=True)
-
-    weather = models.CharField(max_length=50, null=True, blank=True)
-    light = models.CharField(max_length=50, null=True, blank=True)
 
     schema = models.ForeignKey('RecordSchema')
     data = jsb.JsonBField()
 
     archived = models.BooleanField(default=False)
-
-    objects = models.GeoManager()
 
     class Meta(object):
         ordering = ('-created',)
@@ -175,5 +164,3 @@ class BoundaryPolygon(GroutModel):
     boundary = models.ForeignKey('Boundary', related_name='polygons', null=True)
     data = jsb.JsonBField()
     geom = models.MultiPolygonField(srid=settings.GROUT['SRID'])
-
-    objects = models.GeoManager()
