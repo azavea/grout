@@ -12,19 +12,47 @@ fi
 source "${DIR}/_config.sh"
 
 function usage() {
-    echo -n "Usage: $(basename "$0")
+    echo -n "Usage: $(basename "$0") {build,migrations}
 
-Builds and pulls container images using docker-compose.
+Updates repo state, including containers and migrations, using docker-compose.
+
+Options:
+    -h --help    Display this help text
+    build        Update container images
+    migrations   Create Django migrations
 "
+}
+
+function buildcontainers() {
+    # Build containers.
+    docker-compose build
+}
+
+function makemigrations() {
+    # Update Django migrations.
+    docker-compose run --rm makemigrations
 }
 
 if [ "${BASH_SOURCE[0]}" = "${0}" ]
 then
+    if [ -z "$1" ]
+    then
+        # No arguments -- run all update functions.
+        buildcontainers
+        makemigrations
+    else
+        case "${1:-}" in
+            -h|--help)  usage ;;
+            build)      buildcontainers ;;
+            migrations) makemigrations ;;
+            *)          echo "ERROR: command '${1}' is not valid." && echo && usage && exit 1
+        esac
+    fi
     if [ "${1:-}" = "--help" ]
     then
         usage
-    else
-        # Build containers.
-        docker-compose build
+
+        # Update migrations script.
+    
     fi
 fi

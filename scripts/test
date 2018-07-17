@@ -80,16 +80,14 @@ function config_tests() {
     # Make sure that the makemigrations command can run using the sample settings file.
     echo "Making sure that the sample settings file is up to date..."
     echo "-------------------------------------------------------------------"
-    if [ $(DJANGO_SETTINGS_MODULE=grout.settings_example &&\
-        django-admin makemigrations --help > /dev/null 2>&1 &&\
+    if [ $(docker-compose run --rm makemigrations > /dev/null 2>&1 &&\
         echo $? || echo 1) -eq 0 ]
     then
         echo "PASSED: Sample settings file working properly."
     else
         echo "FAILED: Sample settings file raised an error."
         echo
-        echo "Run DJANGO_SETTINGS_MODULE=grout.settings_example && django-admin makemigrations --help
-to debug the error."
+        echo "Run 'docker-compose run --rm makemigrations' to debug the error."
         exit 1
     fi
 }

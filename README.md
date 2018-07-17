@@ -12,16 +12,11 @@ to develop on Grout is to set up a DRIVER VM and use that.**
 ### Making migrations
 
 If you edit the data model in `grout/models.py`, you'll need to create a new
-migration for the app. You can use the sample settings file in the `grout` repo to
-run [Django's `makemigrations`
-command](https://docs.djangoproject.com/en/dev/ref/django-admin/#django-admin-makemigrations): 
+migration for the app. You can use the `update` script in the `scripts`
+directory to automatically generate the migrations:
 
 ```bash
-# Point django-admin to the sample settings file.
-export DJANGO_SETTINGS_MODULE=grout.settings_example
-
-# Generate new migrations.
-django-admin makemigrations
+./scripts/update migrations
 ```
 
 Make sure to register the new migrations file with Git. 
@@ -31,7 +26,7 @@ Make sure to register the new migrations file with Git.
 ### Requirements
 
 - [Docker](http://docs.docker.com/installation/ubuntulinux/)
-- [docker-compose](https://docs.docker.com/compose/install/)
+- [docker-compose](https://docs.docker.com/compose/install/) > 2.0
 
 ### Running tests
 
