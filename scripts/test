@@ -21,6 +21,7 @@ Run tests.
 Options:
     -h --help       Display this help text
     git             Check git commit titles
+    config          Test sample config files
     app [VERSIONS]  Run tests for the app, optionally limited to Python/Django VERSIONS
     <none>          Run all tests
 
@@ -75,12 +76,31 @@ function git_tests() {
     fi
 }
 
+function config_tests() {
+    # Make sure that the makemigrations command can run using the sample settings file.
+    echo "Making sure that the sample settings file is up to date..."
+    echo "-------------------------------------------------------------------"
+    if [ $(/bin/bash "${DIR}/django-admin" > /dev/null 2>&1 &&\
+        echo $? || echo 1) -eq 0 ]
+    then
+        echo "PASSED: Sample settings file working properly."
+    else
+        echo "FAILED: Sample settings file raised an error:"
+        echo
+        /bin/bash "${DIR}/django-admin"
+        # The line above should exit 1, but provide a default just in case.
+        exit 1
+    fi
+}
+
 function all_tests() {
     echo "Running all tests..."
     echo "-------------------------------------------------------------------"
     app_tests
     echo "-------------------------------------------------------------------"
     git_tests
+    echo "-------------------------------------------------------------------"
+    config_tests
     echo "-------------------------------------------------------------------"
     echo "PASSED: All tests passed."
 }
@@ -94,8 +114,9 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
         case "${1:-}" in
             -h|--help) usage ;;
             git)       git_tests ;;
+            config)    config_tests ;;
             app)       shift 1 && app_tests "$@" ;;
-            *)         usage ;;
+            *)         usage && exit 1;;
         esac
     fi
 fi

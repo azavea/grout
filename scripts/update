@@ -12,19 +12,36 @@ fi
 source "${DIR}/_config.sh"
 
 function usage() {
-    echo -n "Usage: $(basename "$0")
+    echo -n "Usage: $(basename "$0") {build}
 
-Builds and pulls container images using docker-compose.
+Updates repo state using docker-compose.
+
+Options:
+    -h --help    Display this help text
+    build        Update container images
 "
+}
+
+function buildcontainers() {
+    # Build containers.
+    docker-compose build
+}
+
+function run_all_updates() {
+    buildcontainers
 }
 
 if [ "${BASH_SOURCE[0]}" = "${0}" ]
 then
-    if [ "${1:-}" = "--help" ]
+    if [ -z "$1" ]
     then
-        usage
+        # No arguments -- run all update functions.
+        run_all_updates
     else
-        # Build containers.
-        docker-compose build
+        case "${1:-}" in
+            -h|--help)  usage ;;
+            build)      buildcontainers ;;
+            *)          echo "ERROR: command '${1}' is not valid." && echo && usage && exit 1
+        esac
     fi
 fi

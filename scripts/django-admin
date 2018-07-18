@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Most reliable way to get the path for this script.
+# h/t: https://stackoverflow.com/questions/192292/bash-how-best-to-include-other-scripts/12694189#12694189
+DIR="${BASH_SOURCE%/*}"
+if [[ ! -d "$DIR" ]];
+then
+    DIR="$PWD"
+fi
+
+# Load common configs for this script.
+source "${DIR}/_config.sh"
+
+# Load DB initialization method.
+source "${DIR}/_init_db.sh"
+
+function django_admin_usage() {
+    echo -n "Usage: $(basename "$0") [CMD]
+
+Runs django-admin (AKA python manage.py) with the specified CMD.
+
+Common operations:
+    - The --help flag displays this usage information. To see available django-admin commands,
+      run with no arguments:
+
+        ./scripts/django-admin
+
+    - To make migrations for the app:
+
+        ./scripts/django-admin makemigrations
+"
+}
+
+if [ "${BASH_SOURCE[0]}" = "${0}" ]
+then
+    if [ "${1:-}" = "--help" ]; then
+        django_admin_usage
+    else
+        init_db
+        docker-compose run --rm django-admin "$@"
+        docker-compose stop db
+    fi
+fi

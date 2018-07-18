@@ -9,12 +9,24 @@
 [djsonb](https://github.com/azavea/djsonb); currently the best way
 to develop on Grout is to set up a DRIVER VM and use that.**
 
+### Making migrations
+
+If you edit the data model in `grout/models.py`, you'll need to create a new
+migration for the app. You can use the `django-admin` script in the `scripts`
+directory to automatically generate the migrations:
+
+```bash
+./scripts/django-admin makemigrations
+```
+
+Make sure to register the new migrations file with Git. 
+
 ## Testing
 
 ### Requirements
 
 - [Docker](http://docs.docker.com/installation/ubuntulinux/)
-- [docker-compose](https://docs.docker.com/compose/install/)
+- [docker-compose](https://docs.docker.com/compose/install/) > 2.0
 
 ### Running tests
 
