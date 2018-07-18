@@ -35,7 +35,6 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]
 then
     if [ "${1:-}" = "--help" ]; then
         django_admin_usage
-        exit 1
     else
         init_db
         docker-compose run --rm django-admin "$@"

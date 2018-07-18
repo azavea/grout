@@ -14,7 +14,7 @@ source "${DIR}/_config.sh"
 # Load database initialization procedure
 source "${DIR}/_init_db.sh"
 
-function test_usage() {
+function usage() {
     echo -n "Usage: $(basename "$0") [OPTION] [VERSIONS]
 Run tests.
 
@@ -112,11 +112,11 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
         all_tests
     else
         case "${1:-}" in
-            -h|--help) test_usage ;;
+            -h|--help) usage ;;
             git)       git_tests ;;
             config)    config_tests ;;
             app)       shift 1 && app_tests "$@" ;;
-            *)         test_usage && exit 1;;
+            *)         usage && exit 1;;
         esac
     fi
 fi
