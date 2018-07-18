@@ -14,7 +14,7 @@ source "${DIR}/_config.sh"
 # Load database initialization procedure
 source "${DIR}/_init_db.sh"
 
-function usage() {
+function test_usage() {
     echo -n "Usage: $(basename "$0") [OPTION] [VERSIONS]
 Run tests.
 
@@ -80,14 +80,15 @@ function config_tests() {
     # Make sure that the makemigrations command can run using the sample settings file.
     echo "Making sure that the sample settings file is up to date..."
     echo "-------------------------------------------------------------------"
-    if [ $(docker-compose run --rm makemigrations > /dev/null 2>&1 &&\
+    if [ $(/bin/bash "${DIR}/django-admin" > /dev/null 2>&1 &&\
         echo $? || echo 1) -eq 0 ]
     then
         echo "PASSED: Sample settings file working properly."
     else
-        echo "FAILED: Sample settings file raised an error."
+        echo "FAILED: Sample settings file raised an error:"
         echo
-        echo "Run 'docker-compose run --rm makemigrations' to debug the error."
+        /bin/bash "${DIR}/django-admin"
+        # The line above should exit 1, but provide a default just in case.
         exit 1
     fi
 }
@@ -111,11 +112,11 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
         all_tests
     else
         case "${1:-}" in
-            -h|--help) usage ;;
+            -h|--help) test_usage ;;
             git)       git_tests ;;
             config)    config_tests ;;
             app)       shift 1 && app_tests "$@" ;;
-            *)         usage ;;
+            *)         test_usage && exit 1;;
         esac
     fi
 fi

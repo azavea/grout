@@ -14,5 +14,4 @@ WORKDIR /opt/grout
 
 RUN pip install -e .
 
-ENTRYPOINT ["bash", "-c"]
-CMD ['django-admin', 'makemigrations']
+ENTRYPOINT ["bash", "-c", "django-admin"]

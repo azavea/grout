@@ -26,6 +26,19 @@ INSTALLED_APPS = [
     'grout',
 ]
 
+# Default database variables correspond to the development database set up
+# in docker-compose.yml
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'HOST': 'db',
+        'PASSWORD': '',
+        'PORT': '5432'
+    }
+}
+
 # Grout-specific variables
 GROUT = {
     'SRID': 4326

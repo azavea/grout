@@ -18,13 +18,15 @@ services:
     environment:
       - PYTHONUNBUFFERED=0  # Do not buffer output (allows Docker to stream stdout)
 
-  makemigrations:
+  django-admin:
     build:
       context: .
-      dockerfile: Dockerfile.makemigrations
+      dockerfile: Dockerfile.mgmt
+    depends_on:
+      - db
     volumes:
       - .:/opt/grout
     environment:
-      - DJANGO_SETTINGS_MODULE=grout.settings_migrations
-    command:
-      - django-admin makemigrations
+      - DJANGO_SETTINGS_MODULE=grout.settings_mgmt
+    entrypoint:
+      - django-admin
