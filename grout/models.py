@@ -28,7 +28,7 @@ class SchemaModel(GroutModel):
     version = models.PositiveIntegerField()
     schema = JSONField()
     next_version = models.OneToOneField('self', related_name='previous_version', null=True,
-                                        editable=False)
+                                        editable=False, on_delete=models.CASCADE)
 
     class Meta(object):
         abstract = True
@@ -60,7 +60,7 @@ class Record(GroutModel):
     geom = models.PointField(srid=settings.GROUT['SRID'])
     location_text = models.CharField(max_length=200, null=True, blank=True)
 
-    schema = models.ForeignKey('RecordSchema')
+    schema = models.ForeignKey('RecordSchema', on_delete=models.CASCADE)
     data = JSONField()
 
     archived = models.BooleanField(default=False)
@@ -83,7 +83,9 @@ class RecordType(GroutModel):
 
 class RecordSchema(SchemaModel):
     """Schemas for spatiotemporal records"""
-    record_type = models.ForeignKey('RecordType', related_name='schemas')
+    record_type = models.ForeignKey('RecordType',
+                                    related_name='schemas',
+                                    on_delete=models.CASCADE)
 
     class Meta(object):
         unique_together = (('record_type', 'version'),)
@@ -161,6 +163,9 @@ class Boundary(GroutModel):
 class BoundaryPolygon(GroutModel):
     """ Individual boundaries and associated data for each geom in a BoundaryUpload """
 
-    boundary = models.ForeignKey('Boundary', related_name='polygons', null=True)
+    boundary = models.ForeignKey('Boundary',
+                                 related_name='polygons',
+                                 null=True,
+                                 on_delete=models.CASCADE)
     data = JSONField()
     geom = models.MultiPolygonField(srid=settings.GROUT['SRID'])

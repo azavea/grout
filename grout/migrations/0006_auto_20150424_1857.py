@@ -49,6 +49,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='boundarypolygon',
             name='boundary',
-            field=models.ForeignKey(related_name='polygons', to='grout.Boundary', null=True),
+            field=models.ForeignKey(related_name='polygons', to='grout.Boundary', null=True, on_delete=models.CASCADE),
         ),
     ]

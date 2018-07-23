@@ -14,11 +14,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='itemschema',
             name='next_version',
-            field=models.OneToOneField(related_name='previous_version', null=True, to='grout.ItemSchema'),
+            field=models.OneToOneField(related_name='previous_version', null=True, to='grout.ItemSchema', on_delete=models.CASCADE),
         ),
         migrations.AddField(
             model_name='recordschema',
             name='next_version',
-            field=models.OneToOneField(related_name='previous_version', null=True, to='grout.RecordSchema'),
+            field=models.OneToOneField(related_name='previous_version', null=True, to='grout.RecordSchema', on_delete=models.CASCADE),
         ),
     ]

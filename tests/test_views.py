@@ -1,7 +1,7 @@
 import os
 import json
 
-from django.core.urlresolvers import reverse
+import django
 from django.contrib.gis.geos import Polygon, LinearRing, MultiPolygon
 
 from rest_framework import status
@@ -10,6 +10,10 @@ from tests.api_test_case import GroutAPITestCase
 from grout.models import (Boundary, BoundaryPolygon,
                           RecordSchema, RecordType)
 
+if django.VERSION < (2, 0):
+    from django.core.urlresolvers import reverse
+else:
+    from django.urls import reverse
 
 class RecordSchemaViewTestCase(GroutAPITestCase):
 
