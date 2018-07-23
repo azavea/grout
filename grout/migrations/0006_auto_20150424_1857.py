@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-import djsonb.fields
+from django.contrib.postgres.fields import JSONField
 import uuid
 import django.contrib.gis.db.models.fields
 
@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('uuid', models.UUIDField(default=uuid.uuid4, serialize=False, editable=False, primary_key=True)),
                 ('created', models.DateTimeField(auto_now_add=True)),
                 ('modified', models.DateTimeField(auto_now=True)),
-                ('data', djsonb.fields.JsonBField()),
+                ('data', JSONField()),
                 ('geom', django.contrib.gis.db.models.fields.MultiPolygonField(srid=4326)),
             ],
             options={
@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='boundary',
             name='data_fields',
-            field=djsonb.fields.JsonBField(null=True, blank=True),
+            field=JSONField(null=True, blank=True),
         ),
         migrations.AddField(
             model_name='boundary',

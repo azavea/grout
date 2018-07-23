@@ -29,7 +29,6 @@ setup(
         'jsonschema >=2.4.0',
         'psycopg2-binary >=2.6',
         'python-dateutil >=2.4.2',
-        'djsonb >= 0.2.3',
         'PyYAML >=3.11',
         'pytz >=2015.7',
         'requests >=2.8.1',

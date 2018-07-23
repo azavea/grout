@@ -60,13 +60,15 @@ class DateFilterBackendTestCase(TestCase):
             occurred_from=self.a_date,  # A DATE
             occurred_to=self.a_date,
             geom='POINT (0 0)',
-            schema=self.schema
+            schema=self.schema,
+            data={}
         )
         self.later_record = Record.objects.create(
             occurred_from=self.a_later_date,  # A LATER DATE
             occurred_to=self.a_later_date,
             geom='POINT (0 0)',
-            schema=self.schema
+            schema=self.schema,
+            data={}
         )
         self.view = RecordViewSet.as_view({'get': 'list'})
 

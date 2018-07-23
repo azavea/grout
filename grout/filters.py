@@ -7,6 +7,7 @@ from dateutil.parser import parse
 from django.core.exceptions import ImproperlyConfigured
 from django.contrib.gis.db import models as gis_models
 from django.contrib.gis.gdal.error import GDALException
+from django.contrib.postgres.fields import JSONField
 from django.db.models import Q
 
 from rest_framework.exceptions import ParseError, NotFound
@@ -16,12 +17,10 @@ from rest_framework_gis.filterset import GeoFilterSet
 from grout.models import Boundary, BoundaryPolygon, Record, RecordType
 from grout.exceptions import QueryParameterException
 
-from djsonb import fields as jsb
-
 
 # Map custom fields to CharField so that django-filter knows how to handle them.
 FILTER_OVERRIDES = {
-    jsb.JsonBField: {
+    JSONField: {
         'filter_class': django_filters.CharFilter
     },
     gis_models.PointField: {
