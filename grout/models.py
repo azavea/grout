@@ -5,7 +5,7 @@ import uuid
 from django.conf import settings
 from django.contrib.gis.db import models
 from django.contrib.gis.gdal import DataSource as GDALDataSource
-from djsonb import fields as jsb
+from django.contrib.postgres.fields import JSONField
 from django.core.validators import MinLengthValidator
 
 import jsonschema
@@ -26,9 +26,9 @@ class GroutModel(models.Model):
 
 class SchemaModel(GroutModel):
     version = models.PositiveIntegerField()
-    schema = jsb.JsonBField()
+    schema = JSONField()
     next_version = models.OneToOneField('self', related_name='previous_version', null=True,
-                                        editable=False)
+                                        editable=False, on_delete=models.CASCADE)
 
     class Meta(object):
         abstract = True
@@ -60,8 +60,8 @@ class Record(GroutModel):
     geom = models.PointField(srid=settings.GROUT['SRID'])
     location_text = models.CharField(max_length=200, null=True, blank=True)
 
-    schema = models.ForeignKey('RecordSchema')
-    data = jsb.JsonBField()
+    schema = models.ForeignKey('RecordSchema', on_delete=models.CASCADE)
+    data = JSONField()
 
     archived = models.BooleanField(default=False)
 
@@ -83,7 +83,9 @@ class RecordType(GroutModel):
 
 class RecordSchema(SchemaModel):
     """Schemas for spatiotemporal records"""
-    record_type = models.ForeignKey('RecordType', related_name='schemas')
+    record_type = models.ForeignKey('RecordType',
+                                    related_name='schemas',
+                                    on_delete=models.CASCADE)
 
     class Meta(object):
         unique_together = (('record_type', 'version'),)
@@ -113,8 +115,8 @@ class Boundary(GroutModel):
     # Store any valid css color string
     color = models.CharField(max_length=64, default='blue')
     display_field = models.CharField(max_length=10, blank=True, null=True)
-    data_fields = jsb.JsonBField(blank=True, null=True)
-    errors = jsb.JsonBField(blank=True, null=True)
+    data_fields = JSONField(blank=True, null=True)
+    errors = JSONField(blank=True, null=True)
     source_file = models.FileField(upload_to='boundaries/%Y/%m/%d')
 
     def load_shapefile(self):
@@ -161,6 +163,9 @@ class Boundary(GroutModel):
 class BoundaryPolygon(GroutModel):
     """ Individual boundaries and associated data for each geom in a BoundaryUpload """
 
-    boundary = models.ForeignKey('Boundary', related_name='polygons', null=True)
-    data = jsb.JsonBField()
+    boundary = models.ForeignKey('Boundary',
+                                 related_name='polygons',
+                                 null=True,
+                                 on_delete=models.CASCADE)
+    data = JSONField()
     geom = models.MultiPolygonField(srid=settings.GROUT['SRID'])

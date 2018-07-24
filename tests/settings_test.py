@@ -25,8 +25,8 @@ INSTALLED_APPS = (
     'rest_framework_gis',
     'django_filters',
     'django_extensions',
-
-    'grout'
+    'grout',
+    'jsonb_field_testing',
 )
 
 MIDDLEWARE_CLASSES = (

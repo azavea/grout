@@ -5,6 +5,9 @@
 Changes we're making en route to version 2.0. When we cut a release, this
 section will form the changelog for v2.0.
 
+- Add support for Django 2.0 ([#8](https://github.com/azavea/grout/pull/8))
+- Removed external `djsonb` dependency and moved its lookup logic into
+  Grout core ([#7](https://github.com/azavea/grout/pull/7)
 - Removed extraneous location fields from the `Record` data model (
   [#5](https://github.com/azavea/grout/pull/5)), including:
     - `city`

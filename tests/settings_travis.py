@@ -27,7 +27,8 @@ INSTALLED_APPS = (
     'django_filters',
     'django_extensions',
 
-    'grout'
+    'grout',
+    'jsonb_field_testing'
 )
 
 MIDDLEWARE_CLASSES = (
