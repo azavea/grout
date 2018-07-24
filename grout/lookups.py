@@ -7,33 +7,58 @@ from django.db.models import Lookup
 from django.contrib.postgres.fields import JSONField
 
 
-class FilterTree:
-    """This class should properly assemble the pieces necessary to write the WHERE clause of
-    a postgres query
-    The jsonb_filter_field property of your view should designate the
-    name of the column to filter by.
-    Manually filtering by way of Django's ORM might look like:
+class FilterTree(object):
+    """
+    This class exposes methods for parsing a JSONB query from the Django ORM
+    and building a corresponding SQL query.
+
+    Manual filtering by way of Django's ORM might look like:
     Something.objects.filter(<jsonb_field>__jsonb=<filter_specification>)
 
-    Check out the tests for some real examples"""
+    Check out the jsonb_field_testing test module for some real examples.
+    """
     def __init__(self, tree, field):
-        self.field = field
-        self.tree = tree
+        self.field = field  # The JSONField to filter on.
+        self.tree = tree  # The nested dictionary representing the query.
+
+        # Map the available filter types to their corresponding classmethod.
         self.sql_generators = {
-            "intrange": FilterTree.intrange_filter,
-            "containment": FilterTree.containment_filter,
-            "containment_multiple": FilterTree.multiple_containment_filter
+            "intrange": self.intrange_filter,
+            "containment": self.containment_filter,
+            "containment_multiple": self.multiple_containment_filter
         }
-        self.rules = self.get_rules(self.tree)
+
+        self.rules = self.get_rules(self.tree)  # Parse and save the query directive.
 
     def is_rule(self, obj):
-        """Check for bottoming out the recursion in `get_rules`"""
+        """
+        Check to see if a dictionary is formatted as a query "rule". This method
+        is useful for checking to see whether the recursion has bottomed
+        out in `get_rules`.
+
+        Args:
+            obj (dict): The dictionary that should be checked for ruleness.
+
+        Returns:
+            bool: True if the dict is a rule, False otherwise.
+        """
         if '_rule_type' in obj and obj['_rule_type'] in self.sql_generators:
             return True
         return False
 
     def get_rules(self, obj, current_path=[]):
-        """Recursively crawl a dict looking for filtering rules"""
+        """
+        Recursively crawl a dictionary to look for filtering rules.
+
+        Args:
+            obj (dict): The dictionary to be crawled.
+            current_path (list): The branch of the tree leading up to this point.
+
+        Returns:
+            list: A list of two-tuples representing query rules. The first element
+                  will be the path to the value in question, while the second
+                  element will be the rule to apply for the filter.
+        """
         # If node isn't a rule or dictionary
         if type(obj) != dict:
             return []
@@ -48,33 +73,39 @@ class FilterTree:
         return rules
 
     def sql(self):
-        """Produce output that can be compiled into SQL by Django and psycopg2.
+        """
+        Produce output that can be compiled into SQL by Django and psycopg2.
 
-        The format of the output should be a tuple of a (template) string followed by a list
-        of parameters for compiling that template
+        Returns:
+            A tuple of a (template) string followed by a list
+            of parameters for compiling that template. (This is the output that
+            Django expects for compiling a SQL query.)
         """
         rule_specs = []
 
         patterns = {}
         pattern_specs = []
 
-        for rule in self.rules:
-            # If not a properly registered rule type
-            if not self.is_rule(rule[1]):
+        # It's safe to unpack `self.get_rules` because it can only
+        # return A) an empty list or B) a list of two-tuples with two elements in
+        # them (the path and the rule for each query directive).
+        for path, rule in self.rules:
+            # Don't parse if this is not a properly registered rule type.
+            if not self.is_rule(rule):
                 pass
-            rule_type = rule[1]['_rule_type']
-            sql_tuple = self.sql_generators[rule_type](rule[0], rule[1])
+            rule_type = rule['_rule_type']
+            sql_tuple = self.sql_generators[rule_type](path, rule)
             if sql_tuple is not None:
                 rule_specs.append(sql_tuple)
 
             # The check on 'pattern' here allows us to apply a pattern filter on top of others
-            if 'pattern' in rule[1]:
+            if 'pattern' in rule:
                 # Don't filter as an exact match on the text entered; match per word.
-                for pattern in shlex.split(rule[1]['pattern']):
-                    if rule[1]['_rule_type'] == 'containment_multiple':
-                        sql_tuple = FilterTree.text_similarity_filter(rule[0], pattern, True)
+                for pattern in shlex.split(rule['pattern']):
+                    if rule['_rule_type'] == 'containment_multiple':
+                        sql_tuple = FilterTree.text_similarity_filter(path, pattern, True)
                     else:
-                        sql_tuple = FilterTree.text_similarity_filter(rule[0], pattern, False)
+                        sql_tuple = FilterTree.text_similarity_filter(path, pattern, False)
                     # add to the list of rules generated for this pattern (one per field)
                     patterns.setdefault(pattern, []).append(sql_tuple)
 
@@ -110,10 +141,29 @@ class FilterTree:
     # Filters
     @classmethod
     def containment_filter(cls, path, rule):
-        """Filter for objects that contain the specified value at some location"""
-        template = reconstruct_object(path[1:])
+        """
+        Filter for objects that match the `rule` at some location `path` in
+        a Record object.
+
+        Registered on the 'contains' rule type.
+
+        Args:
+            path (list): A list of keys representing the path to the field in question,
+                         with keys stored from deepest to shallowest.
+            rule (dict): A dictionary representing the rule to apply.
+
+        Returns:
+            tuple: Information for building a SQL query from this filter rule,
+                   with the containment query in the first position and the
+                   parameters in the second.
+        """
+        # The `path` dict stores the full branch that leads to the value in
+        # question, from leaf to root.
+        leaf, branch = path[0], path[1:]
+
+        template = reconstruct_object(branch)
         has_containment = 'contains' in rule
-        abstract_contains_str = path[0] + " @> %s"
+        abstract_contains_str = leaf + " @> %s"
 
         if has_containment:
             all_contained = rule.get('contains')
@@ -121,7 +171,7 @@ class FilterTree:
             return None
 
         contains_params = []
-        json_path = [json.dumps(x) for x in path[1:]]
+        json_path = [json.dumps(x) for x in branch]
         for contained in all_contained:
             interpolants = tuple(json_path + [json.dumps(contained)])
             contains_params.append(template % interpolants)
@@ -135,11 +185,29 @@ class FilterTree:
 
     @classmethod
     def multiple_containment_filter(cls, path, rule):
-        """Filter for objects that contain the specified value in any of the objects in a
-        given list"""
-        template = reconstruct_object_multiple(path[1:])
+        """
+        Filter for objects that match the specified `rule` in any of the objects in a
+        given list.
+
+        Registered on the 'containment_multiple' rule type.
+
+        Args:
+            path (list): A list of keys representing the path to the field in question,
+                         with keys stored from deepest to shallowest.
+            rule (dict): A dictionary representing the rule to apply.
+
+        Returns:
+            tuple: Information for building a SQL query from this filter rule,
+                   with the containment query in the first position and the
+                   parameters in the second.
+        """
+        # The `path` dict stores the full branch that leads to the value in
+        # question, from leaf to root.
+        leaf, branch = path[0], path[1:]
+
+        template = reconstruct_object_multiple(branch)
         has_containment = 'contains' in rule
-        abstract_contains_str = path[0] + " @> %s"
+        abstract_contains_str = leaf + " @> %s"
 
         if has_containment:
             all_contained = rule.get('contains')
@@ -147,7 +215,7 @@ class FilterTree:
             return None
 
         contains_params = []
-        json_path = [json.dumps(x) for x in path[1:]]
+        json_path = [json.dumps(x) for x in branch]
         for contained in all_contained:
             interpolants = tuple(json_path + [json.dumps(contained)])
             contains_params.append(template % interpolants)
@@ -161,7 +229,21 @@ class FilterTree:
 
     @classmethod
     def intrange_filter(cls, path, rule):
-        """Filter for numbers that match boundaries provided by a rule"""
+        """
+        Filter for numbers that match boundaries provided by a rule.
+
+        Registered on the 'intrange' rule type.
+
+        Args:
+            path (list): A list of keys representing the path to the field in question,
+                         with keys stored from deepest to shallowest.
+            rule (dict): A dictionary representing the rule to apply.
+
+        Returns:
+            tuple: Information for building a SQL query from this filter rule,
+                   with the containment query in the first position and the
+                   parameters in the second.
+        """
         traversed_int = "(" + extract_value_at_path(path) + ")::int"
         has_min = 'min' in rule and rule['min'] is not None
         has_max = 'max' in rule and rule['max'] is not None
@@ -175,27 +257,45 @@ class FilterTree:
             less_than = ("{traversal_int} <= %s"
                          .format(traversal_int=traversed_int))
 
+        # The `path` dict stores the full branch that leads to the value in
+        # question, from leaf to root.
+        branch = path[1:]
+
         if has_min and not has_max:
             sql_template = '(' + more_than + ')'
-            return (sql_template, path[1:] + [minimum])
+            return (sql_template, branch + [minimum])
         elif has_max and not has_min:
             sql_template = '(' + less_than + ')'
-            return (sql_template, path[1:] + [maximum])
+            return (sql_template, branch + [maximum])
         elif has_max and has_min:
             sql_template = '(' + less_than + ' AND ' + more_than + ')'
-            return (sql_template, path[1:] + [maximum] + path[1:] + [minimum])
+            return (sql_template, branch + [maximum] + branch + [minimum])
         else:
             return None
 
     @classmethod
     def text_similarity_filter(cls, path, pattern, path_multiple=False):
-        """Filter for objects that contain members (at the specified addresses)
-        which match against a provided pattern
-        If path_multiple is true, this function generates a regular expression to parse
-        the json array of objects. This regular expression works by finding the key and
-        attempting to match a string against that key's associated value. This unfortunate
-        use of regex is necessitated by Postgres' inability to iterate in a WHERE clause
-        and the requirement that we deal with records that have multiple related objects."""
+        """
+        Filter for objects that contain members (at the specified addresses)
+        which match against a provided pattern.
+
+        Args:
+            path (list): A list of keys representing the path to the field in question,
+                         with keys stored from deepest to shallowest.
+            pattern (str): A regex pattern to use for the filter.
+            path_multiple (bool):  If true, this function generates a regular expression to parse
+                                   the json array of objects. This regular expression works by
+                                   finding the key and attempting to match a string against that
+                                   key's associated value. This unfortunate use of regex is
+                                   necessitated by Postgres' inability to iterate in a WHERE clause
+                                   and the requirement that we deal with records that have multiple
+                                   related objects.
+
+        Returns:
+            tuple: Information for building a SQL query from this filter rule,
+                   with the containment query in the first position and the
+                   parameters in the second.
+        """
         has_similarity = pattern is not None
         if not has_similarity:
             return None
@@ -230,10 +330,11 @@ def contains_key_at_path(path):
 
 
 def operator_at_traversal_path(path, op):
-    """Construct traversal instructions for Postgres from a list of nodes; apply op as last step
+    """
+    Construct traversal instructions for Postgres from a list of nodes; apply op as last step
     like: '%s->%S->%s->>%s' for path={a: {b: {c: value } } }, op='->>'
 
-    Don't use this unless extract_value_at_path and contains_key_at_path don't work for you
+    Don't use this unless extract_value_at_path and contains_key_at_path don't work for you.
     """
     fmt_strs = [path[0]] + ['%s' for leaf in path[1:]]
     traversal = '->'.join(fmt_strs[:-1]) + '{op}%s'.format(op=op)
@@ -241,7 +342,9 @@ def operator_at_traversal_path(path, op):
 
 
 def reconstruct_object(path):
-    """Reconstruct the object from root to leaf, recursively"""
+    """
+    Reconstruct the object from root to leaf, recursively.
+    """
     if len(path) == 0:
         return '%s'
     else:
@@ -251,7 +354,9 @@ def reconstruct_object(path):
 
 
 def reconstruct_object_multiple(path):
-    """Reconstruct the object from root to leaf, recursively"""
+    """
+    Reconstruct the object from root to leaf, recursively.
+    """
     if len(path) == 0:
         return '%s'
     elif len(path) == 2:
@@ -264,21 +369,19 @@ def reconstruct_object_multiple(path):
         return '{{%s: {recons}}}'.format(recons=reconstruct_object_multiple(path[1:]))
 
 
-class DriverLookup(Lookup):
-    lookup_name = 'jsonb'
-
-    def as_sql(self, qn, connection):
-        lhs, lhs_params = self.process_lhs(qn, connection)
-        rhs, rhs_params = self.process_rhs(qn, connection)
-
-        return FilterTree(rhs_params[0], lhs).sql()
-
-
 @JSONField.register_lookup
 class JSONLookup(Lookup):
+    """
+    A custom lookup using the FilterTree to implement nested queries for JSONFields.
+    """
     lookup_name = 'jsonb'
 
     def as_sql(self, qn, connection):
+        """
+        Override the Lookup method that creates the SQL query. See Django's
+        documentation for information about the parameters:
+        https://docs.djangoproject.com/en/dev/howto/custom-lookups/
+        """
         lhs, lhs_params = self.process_lhs(qn, connection)
         rhs, rhs_params = self.process_rhs(qn, connection)
 
@@ -286,7 +389,7 @@ class JSONLookup(Lookup):
         # JSONField formats query values for the database by wrapping them psycopg2's
         # JsonAdapter, but we need the raw Python dict so that we can parse the
         # query tree. Intercept the query parameter (it'll always be the first
-        # element in the parameter list, since the jsonb filter only accepts one argument)
+        # element in the parameter list, since the custom jsonb filter only accepts one argument)
         # and revert it back to a Python dict for tree parsing.
         tree = rhs_params[0].adapted
 
