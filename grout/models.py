@@ -16,6 +16,9 @@ from grout.imports.shapefile import (extract_zip_to_temp_dir,
 
 
 class GroutModel(models.Model):
+    """
+    Base class providing attributes common to all Grout data types.
+    """
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
@@ -24,14 +27,34 @@ class GroutModel(models.Model):
         abstract = True
 
 
-class SchemaModel(GroutModel):
+class RecordType(GroutModel):
+    """
+    Store metadata for a class of Records.
+    """
+    label = models.CharField(max_length=64)
+    plural_label = models.CharField(max_length=64)
+    description = models.TextField(blank=True, null=True)
+    active = models.BooleanField(default=True)
+
+    def get_current_schema(self):
+        schemas = self.schemas.order_by('-version')
+        return schemas[0] if len(schemas) > 0 else None
+
+
+class RecordSchema(GroutModel):
+    """
+    A flexible schema describing the data contained by a Record.
+    """
     version = models.PositiveIntegerField()
     schema = JSONField()
     next_version = models.OneToOneField('self', related_name='previous_version', null=True,
                                         editable=False, on_delete=models.CASCADE)
+    record_type = models.ForeignKey('RecordType',
+                                    related_name='schemas',
+                                    on_delete=models.CASCADE)
 
     class Meta(object):
-        abstract = True
+        unique_together = (('record_type', 'version'),)
 
     def validate_json(self, json_dict):
         """Validates a JSON-like dictionary against this object's schema
@@ -52,7 +75,7 @@ class SchemaModel(GroutModel):
         jsonschema.Draft4Validator.check_schema(schema)
 
 
-class FlexibleSchemaRecord(GroutModel):
+class AbstractFlexibleRecord(GroutModel):
     """
     Base class for flexible records.
     """
@@ -61,71 +84,78 @@ class FlexibleSchemaRecord(GroutModel):
     archived = models.BooleanField(default=False)
 
     class Meta(object):
-        ordering = ('-created',)
+        abstract = True
 
 
-class DateTimeRange(object):
+class DateTimeRange(models.Model):
     """
     Save a flexible record with date and time attributes.
     """
     occurred_from = models.DateTimeField()
     occurred_to = models.DateTimeField()
 
+    class Meta(object):
+        abstract = True
 
-class PointRecord(FlexibleSchemaRecord):
+
+class FlexibleRecord(AbstractFlexibleRecord):
+    """
+    Catalog data with a flexible schema.
+    """
+    pass
+
+
+class TemporalFlexibleRecord(AbstractFlexibleRecord, DateTimeRange):
+    """
+    Catalog data with a flexible schema, including enforced date/time data.
+    """
+    pass
+
+
+class PointRecord(AbstractFlexibleRecord):
     """
     Catalog a point in space.
+    """
+    class Meta(object):
+        ordering = ('-created',)
+
+
+class Record(AbstractFlexibleRecord, DateTimeRange):
+    """
+    Catalog a point in time and space.
+
+    The name is perhaps confusing, but is here for legacy support. Should be
+    thought of as 'TemporalPointRecord' instead.
     """
     geom = models.PointField(srid=settings.GROUT['SRID'])
     location_text = models.CharField(max_length=200, null=True, blank=True)
 
+    class Meta(object):
+        ordering = ('-created',)
 
-class TemporalPointRecord(PointRecord, DateTimeRange):
+
+class TemporalPointRecord(Record):
     """
-    Catalog a point in time and space.
+    Alias for a Record. Catalog a point in time and space.
     """
+    pass
 
 
-class Record(TemporalPointRecord):
-    """
-    Alias for a TemporalPointRecord. Provides legacy support.
-    """
-
-
-class PolygonRecord(FlexibleSchemaRecord):
+class PolygonRecord(AbstractFlexibleRecord):
     """
     Catalog a boundary in space.
     """
     geom = models.PolygonField(srid=settings.GROUT['SRID'])
     location_text = models.CharField(max_length=200, null=True, blank=True)
 
+    class Meta(object):
+        ordering = ('-created',)
 
-class TemporalPolygonRecord(PolygonRecord, DateTimeRange):
+
+class TemporalPolygonRecord(AbstractFlexibleRecord, DateTimeRange):
     """
     Catalog a boundary in time and space.
     """
-
-
-class RecordType(GroutModel):
-    """ Store extra information for a given RecordType, associated schemas in RecordSchema """
-    label = models.CharField(max_length=64)
-    plural_label = models.CharField(max_length=64)
-    description = models.TextField(blank=True, null=True)
-    active = models.BooleanField(default=True)
-
-    def get_current_schema(self):
-        schemas = self.schemas.order_by('-version')
-        return schemas[0] if len(schemas) > 0 else None
-
-
-class RecordSchema(SchemaModel):
-    """Schemas for spatiotemporal records"""
-    record_type = models.ForeignKey('RecordType',
-                                    related_name='schemas',
-                                    on_delete=models.CASCADE)
-
-    class Meta(object):
-        unique_together = (('record_type', 'version'),)
 
 
 class Boundary(GroutModel):
