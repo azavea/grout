@@ -52,21 +52,58 @@ class SchemaModel(GroutModel):
         jsonschema.Draft4Validator.check_schema(schema)
 
 
-class Record(GroutModel):
-    """Spatiotemporal records -- e.g. Loch Ness Monster sightings, crime events, etc."""
-    occurred_from = models.DateTimeField()
-    occurred_to = models.DateTimeField()
-
-    geom = models.PointField(srid=settings.GROUT['SRID'])
-    location_text = models.CharField(max_length=200, null=True, blank=True)
-
+class FlexibleSchemaRecord(GroutModel):
+    """
+    Base class for flexible records.
+    """
     schema = models.ForeignKey('RecordSchema', on_delete=models.CASCADE)
     data = JSONField()
-
     archived = models.BooleanField(default=False)
 
     class Meta(object):
         ordering = ('-created',)
+
+
+class DateTimeRange(object):
+    """
+    Save a flexible record with date and time attributes.
+    """
+    occurred_from = models.DateTimeField()
+    occurred_to = models.DateTimeField()
+
+
+class PointRecord(FlexibleSchemaRecord):
+    """
+    Catalog a point in space.
+    """
+    geom = models.PointField(srid=settings.GROUT['SRID'])
+    location_text = models.CharField(max_length=200, null=True, blank=True)
+
+
+class TemporalPointRecord(PointRecord, DateTimeRange):
+    """
+    Catalog a point in time and space.
+    """
+
+
+class Record(TemporalPointRecord):
+    """
+    Alias for a TemporalPointRecord. Provides legacy support.
+    """
+
+
+class PolygonRecord(FlexibleSchemaRecord):
+    """
+    Catalog a boundary in space.
+    """
+    geom = models.PolygonField(srid=settings.GROUT['SRID'])
+    location_text = models.CharField(max_length=200, null=True, blank=True)
+
+
+class TemporalPolygonRecord(PolygonRecord, DateTimeRange):
+    """
+    Catalog a boundary in time and space.
+    """
 
 
 class RecordType(GroutModel):
