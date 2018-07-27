@@ -2,6 +2,8 @@ from collections import OrderedDict
 from datetime import datetime, timedelta
 
 from django.db import IntegrityError
+from django.db.models import Value
+from django.contrib.gis.db import models
 
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import detail_route
@@ -12,6 +14,11 @@ from rest_framework_gis.filters import InBBoxFilter
 from grout.models import (Boundary,
                           BoundaryPolygon,
                           Record,
+                          PointRecord,
+                          PolygonRecord,
+                          FlexibleRecord,
+                          TemporalPolygonRecord,
+                          TemporalFlexibleRecord,
                           RecordType,
                           RecordSchema)
 from grout.serializers import (BoundarySerializer,
@@ -47,7 +54,22 @@ class BoundaryPolygonViewSet(viewsets.ModelViewSet):
 
 
 class RecordViewSet(viewsets.ModelViewSet):
-    queryset = Record.objects.all()
+    # Use the Record class as the base for the union, since it contains the
+    # most fields and Django UNION querysets only expose fields that are
+    # defined on the root queryset.
+    queryset = Record.objects.all().union(
+        TemporalPolygonRecord.objects.all(),
+        FlexibleRecord.objects.annotate(geom=Value(None, models.PointField()),
+                                        location_text=Value(None, models.CharField()),
+                                        occurred_from=Value(None, models.DateTimeField()),
+                                        occurred_to=Value(None, models.DateTimeField())).all(),
+        TemporalFlexibleRecord.objects.annotate(geom=Value(None, models.PointField()),
+                                                location_text=Value(None,models.CharField())).all(),
+        PointRecord.objects.annotate(occurred_from=Value(None, models.DateTimeField()),
+                                     occurred_to=Value(None, models.DateTimeField())).all(),
+        PolygonRecord.objects.annotate(occurred_from=Value(None, models.DateTimeField()),
+                                       occurred_to=Value(None, models.DateTimeField())).all(),
+    )
     serializer_class = RecordSerializer
     filter_class = RecordFilter
     bbox_filter_field = 'geom'

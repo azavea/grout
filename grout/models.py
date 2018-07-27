@@ -102,8 +102,15 @@ class PointFields(models.Model):
     """
     Base class for a record with point geometry.
     """
+    class GeometryTypes(object):
+        POINT = 'point'
+        CHOICES = ((POINT, 'Point'),)
+
     geom = models.PointField(srid=settings.GROUT['SRID'])
     location_text = models.CharField(max_length=200, null=True, blank=True)
+    geometry_type = models.CharField(max_length=7,
+                                     choices=GeometryTypes.CHOICES,
+                                     default=GeometryTypes.POINT)
 
     class Meta(object):
         abstract = True
@@ -113,14 +120,37 @@ class PolygonFields(models.Model):
     """
     Base class for a record with polygon geometry.
     """
+    class GeometryTypes(object):
+        POLYGON = 'polygon'
+        CHOICES = ((POLYGON, 'Polygon'),)
+
     geom = models.PolygonField(srid=settings.GROUT['SRID'])
     location_text = models.CharField(max_length=200, null=True, blank=True)
+    geometry_type = models.CharField(max_length=7,
+                                     choices=GeometryTypes.CHOICES,
+                                     default=GeometryTypes.POLYGON)
 
     class Meta(object):
         abstract = True
 
 
-class FlexibleRecord(AbstractFlexibleRecord):
+class NoGeometryFields(models.Model):
+    """
+    Base class for a record with no geometry.
+    """
+    class GeometryTypes(object):
+        NONE = 'none'
+        CHOICES = ((NONE, 'None'),)
+
+    geometry_type = models.CharField(max_length=7,
+                                     choices=GeometryTypes.CHOICES,
+                                     default=GeometryTypes.NONE)
+
+    class Meta(object):
+        abstract = True
+
+
+class FlexibleRecord(AbstractFlexibleRecord, NoGeometryFields):
     """
     Catalog data with a flexible schema.
     """
@@ -128,7 +158,7 @@ class FlexibleRecord(AbstractFlexibleRecord):
         ordering = ('-created',)
 
 
-class TemporalFlexibleRecord(AbstractFlexibleRecord, DateTimeRange):
+class TemporalFlexibleRecord(AbstractFlexibleRecord, NoGeometryFields, DateTimeRange):
     """
     Catalog data with a flexible schema, including enforced date/time data.
     """

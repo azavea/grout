@@ -281,9 +281,8 @@ class RecordQueryTestCase(TestCase):
             with self.assertRaises(ParseError) as e:
                 queryset = self.filter_backend.filter_polygon(self.queryset, 'geom', geojson)
 
-    def test_geometry_type_filter(self):
-        """Test filtering by the type of geometry on the Record."""
-        # Test filtering for PointRecords.
+    def test_geometry_type_point_filter(self):
+        """Test filtering for PointRecords."""
         point_record_count = len([self.id_record_1, self.id_record_2,
                                   self.item_record_1, self.item_record_2])
         point_req = self.factory.get('/foo/', {'geometry_type': 'point'})
@@ -292,7 +291,8 @@ class RecordQueryTestCase(TestCase):
         self.assertEqual(json.loads(point_res.content.decode('utf-8'))['count'],
                          point_record_count)
 
-        # Test filtering for PolygonRecords.
+    def test_geometry_type_polygon_filter(self):
+        """Test filtering for PolygonRecords."""
         polygon_record_count = len([self.polygon_record])
         polygon_req = self.factory.get('/foo/', {'geometry_type': 'polygon'})
         force_authenticate(polygon_req, self.user)
@@ -300,13 +300,23 @@ class RecordQueryTestCase(TestCase):
         self.assertEqual(json.loads(polygon_res.content.decode('utf-8'))['count'],
                          polygon_record_count)
 
-        # Test filtering for FlexibleRecords.
+    def test_geometry_type_none_filter(self):
+        """Test filtering for FlexibleRecords."""
         nongeospatial_record_count = len([self.nongeospatial_record])
-        none_req = self.factory.get('/foo/', {'geometry_type': 'none'})
+        nongeospatial_req = self.factory.get('/foo/', {'geometry_type': 'none'})
         force_authenticate(none_req, self.user)
         nongeospatial_res = self.view(nongeospatial_req).render()
         self.assertEqual(json.loads(nongeospatial_res.content.decode('utf-8'))['count'],
                          nongeospatial_record_count)
+
+    def test_geometry_type_unregistered_filter(self):
+        """Ensure that an error gets thrown when the user sends in an unexpected geometry_type."""
+        bad_req = self.factory.get('/foo/', {'geometry_type': 'foobarbaz'})
+        force_authenticate(bad_req, self.user)
+        bad_res = self.view(bad_req).render()
+        self.assertEqual(bad_res.status_code, 400)
+        self.assertEqual(json.loads(bad_res.content.decode('utf-8'))['detail'],
+                         RecordFilter.GEOTYPE_PARAM_ERR)
 
     def test_geometry_type_and_polygon_filters_are_mutually_exclusive(self):
         """Test that the user cannot filter on `geometry_type:none` and `polygon`."""

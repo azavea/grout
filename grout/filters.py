@@ -14,6 +14,7 @@ from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.filters import BaseFilterBackend
 from rest_framework_gis.filterset import GeoFilterSet
 
+from grout import models
 from grout.models import Boundary, BoundaryPolygon, Record, RecordType
 from grout.exceptions import QueryParameterException
 
@@ -30,9 +31,12 @@ FILTER_OVERRIDES = {
 
 class RecordFilter(GeoFilterSet):
 
+    geometry_type = django_filters.Filter(field_name='geometry_type', method='filter_geometry_type')
     record_type = django_filters.Filter(field_name='record_type', method='filter_record_type')
     polygon = django_filters.Filter(field_name='polygon', method='filter_polygon')
     polygon_id = django_filters.Filter(field_name='polygon_id', method='filter_polygon_id')
+
+    GEOTYPE_PARAM_ERR = "geometry_type must be one of: 'point', 'polygon', 'none'."
 
     def filter_polygon(self, queryset, field_name, geojson):
         """ Method filter for arbitrary polygon, sent in as geojson.
@@ -75,6 +79,17 @@ class RecordFilter(GeoFilterSet):
 
         """
         return queryset.filter(schema__record_type=value)
+
+    def filter_geometry_type(self, queryset, field_name, value):
+        """
+        Filter Records by the type of geometry (point, polygon, or none).
+        """
+        # Validate the input parameters.
+        valid_params = ['point', 'polygon', 'none']
+        if value not in valid_params:
+            raise ParseError(self.GEOTYPE_PARAM_ERR)
+
+        return queryset.filter(geometry_type=value)
 
     class Meta:
         model = Record
