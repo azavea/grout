@@ -89,10 +89,32 @@ class AbstractFlexibleRecord(GroutModel):
 
 class DateTimeRange(models.Model):
     """
-    Save a flexible record with date and time attributes.
+    Base class for a flexible record with date and time attributes.
     """
     occurred_from = models.DateTimeField()
     occurred_to = models.DateTimeField()
+
+    class Meta(object):
+        abstract = True
+
+
+class PointFields(models.Model):
+    """
+    Base class for a record with point geometry.
+    """
+    geom = models.PointField(srid=settings.GROUT['SRID'])
+    location_text = models.CharField(max_length=200, null=True, blank=True)
+
+    class Meta(object):
+        abstract = True
+
+
+class PolygonFields(models.Model):
+    """
+    Base class for a record with polygon geometry.
+    """
+    geom = models.PolygonField(srid=settings.GROUT['SRID'])
+    location_text = models.CharField(max_length=200, null=True, blank=True)
 
     class Meta(object):
         abstract = True
@@ -102,17 +124,19 @@ class FlexibleRecord(AbstractFlexibleRecord):
     """
     Catalog data with a flexible schema.
     """
-    pass
+    class Meta(object):
+        ordering = ('-created',)
 
 
 class TemporalFlexibleRecord(AbstractFlexibleRecord, DateTimeRange):
     """
     Catalog data with a flexible schema, including enforced date/time data.
     """
-    pass
+    class Meta(object):
+        ordering = ('-created',)
 
 
-class PointRecord(AbstractFlexibleRecord):
+class PointRecord(AbstractFlexibleRecord, PointFields):
     """
     Catalog a point in space.
     """
@@ -120,16 +144,13 @@ class PointRecord(AbstractFlexibleRecord):
         ordering = ('-created',)
 
 
-class Record(AbstractFlexibleRecord, DateTimeRange):
+class Record(AbstractFlexibleRecord, PointFields, DateTimeRange):
     """
     Catalog a point in time and space.
 
     The name is perhaps confusing, but is here for legacy support. Should be
     thought of as 'TemporalPointRecord' instead.
     """
-    geom = models.PointField(srid=settings.GROUT['SRID'])
-    location_text = models.CharField(max_length=200, null=True, blank=True)
-
     class Meta(object):
         ordering = ('-created',)
 
@@ -138,24 +159,24 @@ class TemporalPointRecord(Record):
     """
     Alias for a Record. Catalog a point in time and space.
     """
-    pass
-
-
-class PolygonRecord(AbstractFlexibleRecord):
-    """
-    Catalog a boundary in space.
-    """
-    geom = models.PolygonField(srid=settings.GROUT['SRID'])
-    location_text = models.CharField(max_length=200, null=True, blank=True)
-
     class Meta(object):
         ordering = ('-created',)
 
 
-class TemporalPolygonRecord(AbstractFlexibleRecord, DateTimeRange):
+class PolygonRecord(AbstractFlexibleRecord, PolygonFields):
+    """
+    Catalog a boundary in space.
+    """
+    class Meta(object):
+        ordering = ('-created',)
+
+
+class TemporalPolygonRecord(AbstractFlexibleRecord, PolygonFields, DateTimeRange):
     """
     Catalog a boundary in time and space.
     """
+    class Meta(object):
+        ordering = ('-created',)
 
 
 class Boundary(GroutModel):
