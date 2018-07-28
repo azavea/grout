@@ -97,7 +97,7 @@ class RecordQueryTestCase(TestCase):
                                                  'grout@azavea.com',
                                                  '123')
 
-        self.filter_backend = RecordFilter()
+        self.filter_backend = RecordFilter(queryset=Record.objects.all())
         self.viewset = RecordViewSet()
         self.view = RecordViewSet.as_view({'get': 'list'})
         self.factory = APIRequestFactory()
@@ -304,7 +304,7 @@ class RecordQueryTestCase(TestCase):
         """Test filtering for FlexibleRecords."""
         nongeospatial_record_count = len([self.nongeospatial_record])
         nongeospatial_req = self.factory.get('/foo/', {'geometry_type': 'none'})
-        force_authenticate(none_req, self.user)
+        force_authenticate(nongeospatial_req, self.user)
         nongeospatial_res = self.view(nongeospatial_req).render()
         self.assertEqual(json.loads(nongeospatial_res.content.decode('utf-8'))['count'],
                          nongeospatial_record_count)
@@ -316,7 +316,7 @@ class RecordQueryTestCase(TestCase):
         bad_res = self.view(bad_req).render()
         self.assertEqual(bad_res.status_code, 400)
         self.assertEqual(json.loads(bad_res.content.decode('utf-8'))['detail'],
-                         RecordFilter.GEOTYPE_PARAM_ERR)
+                         RecordViewSet.GEOTYPE_NOT_VALID)
 
     def test_geometry_type_and_polygon_filters_are_mutually_exclusive(self):
         """Test that the user cannot filter on `geometry_type:none` and `polygon`."""

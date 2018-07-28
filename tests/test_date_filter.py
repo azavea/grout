@@ -137,6 +137,8 @@ class DateFilterBackendTestCase(TestCase):
         force_authenticate(min_is_none_req, self.user)
         min_is_none_res = self.view(min_is_none_req).render()
 
+        import pdb
+        pdb.set_trace()
         self.assertEqual(json.loads(min_is_none_res.content.decode('utf-8'))['count'], 1)
 
         max_is_none_req = self.factory.get('/foo/', {'occurred_max': 'none'})
@@ -150,11 +152,12 @@ class DateFilterBackendTestCase(TestCase):
         bad_min_req = self.factory.get('/foo/', {'occurred_min': 'none', 'occurred_max': self.a_date})
         bad_max_req = self.factory.get('/foo/', {'occurred_max': 'none', 'occurred_min': self.a_date})
 
-        for bad_req, param in ((bad_min_req, 'occurred_min'), (bad_max_req, 'occurred_max')):
+        for bad_req, none_param, timestamp_param in ((bad_min_req, 'occurred_min', 'occurred_max'),
+                                                     (bad_max_req, 'occurred_max', 'occurred_min')):
             force_authenticate(bad_req, self.user)
             bad_res = self.view(bad_req).render()
 
             self.assertEqual(bad_res.status_code, 400)
-            msg = ('Invalid value for parameter %s: ' % param +
-                   'value cannot be "none" while another param is a valid datetime.')
+            msg = RecordViewSet.INVALID_DATETIMES.format(none=none_param,
+                                                         timestamp=timestamp_param)
             self.assertEqual(str(json.loads(bad_res.content.decode('utf-8'))['detail']), msg)
