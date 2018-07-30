@@ -56,9 +56,6 @@ class RecordViewSet(viewsets.ModelViewSet):
     filter_backends = (InBBoxFilter, JsonBFilterBackend,
                        DjangoFilterBackend, DateRangeFilterBackend)
 
-    # Error messages.
-    BAD_GEOMETRY = "The posted geometry was parsed as a {input}, when it should be a {expected}."
-
 
 class RecordTypeViewSet(viewsets.ModelViewSet):
     queryset = RecordType.objects.all()

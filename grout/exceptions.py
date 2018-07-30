@@ -20,3 +20,9 @@ class QueryParameterException(APIException):
 
 GEOMETRY_TYPE_ERROR = ("Incoming Record geometry '{incoming}' does not match the " +
                        "expected geometry type '{expected}' of the RecordType {uuid}.")
+DATETIME_NOT_PERMITTED = ("This field is not permitted for Records of RecordType {uuid}. " +
+                          "Please remove this field, or update the RecordType to set " +
+                          "the `temporal` flag to True")
+DATETIME_REQUIRED = ("This field is required for all Records of RecordType {uuid}. " +
+                     "Please include this field, or update the RecordType to set " +
+                     "the `temporal` flag to False.")

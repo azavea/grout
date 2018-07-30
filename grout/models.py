@@ -14,7 +14,7 @@ import jsonschema
 from grout.imports.shapefile import (extract_zip_to_temp_dir,
                                      get_shapefiles_in_dir,
                                      make_multipolygon)
-from grout.exceptions import GEOMETRY_TYPE_ERROR
+from grout.exceptions import GEOMETRY_TYPE_ERROR, DATETIME_REQUIRED, DATETIME_NOT_PERMITTED
 
 
 class GroutModel(models.Model):
@@ -101,7 +101,7 @@ class Record(GroutModel):
     schema defined by a certain RecordSchema.
     """
     schema = models.ForeignKey('RecordSchema', on_delete=models.CASCADE)
-    data = JSONField(blank=True)
+    data = JSONField(blank=True)  # `blank` lets us store empty dicts ({}).
     archived = models.BooleanField(default=False)
     occurred_from = models.DateTimeField(null=True, blank=True)
     occurred_to = models.DateTimeField(null=True, blank=True)
@@ -115,9 +115,12 @@ class Record(GroutModel):
         """
         Provide custom field validation for this model.
         """
+        errors = {}
+
         # Make sure that incoming geometry matches the geometry_type of the
         # RecordType for this Record.
         expected_geotype = self.schema.record_type.get_geometry_type_display()
+        record_type_id = self.schema.record_type.uuid
 
         if self.geom:
             incoming_geotype = self.geom.geom_type
@@ -125,12 +128,37 @@ class Record(GroutModel):
             incoming_geotype = 'None'
 
         if incoming_geotype != expected_geotype:
-            msg = GEOMETRY_TYPE_ERROR.format(incoming=incoming_geotype,
-                                             expected=expected_geotype,
-                                             uuid=self.schema.record_type.uuid)
+            geom_error = GEOMETRY_TYPE_ERROR.format(incoming=incoming_geotype,
+                                                    expected=expected_geotype,
+                                                    uuid=record_type_id)
+
+            errors['geom'] = geom_error
+
+        # Make sure that incoming datetime information matches the `temporal`
+        # flag on the RecordType for this Record.
+        datetime_required = self.schema.record_type.temporal
+        has_both_datetimes = (self.occurred_from is not None and self.occurred_to is not None)
+        has_any_datetimes = (self.occurred_from is not None or self.occurred_to is not None)
+
+        if datetime_required:
+            if self.occurred_from is None:
+                occurred_from_error = DATETIME_REQUIRED.format(uuid=record_type_id)
+                errors['occurred_from'] = occurred_from_error
+            if self.occurred_to is None:
+                occurred_to_error = DATETIME_REQUIRED.format(uuid=record_type_id)
+                errors['occurred_to'] = occurred_to_error
+        else:
+            if self.occurred_from is not None:
+                occurred_from_error = DATETIME_NOT_PERMITTED.format(uuid=record_type_id)
+                errors['occurred_from'] = occurred_from_error
+            if self.occurred_to is not None:
+                occurred_to_error = DATETIME_NOT_PERMITTED.format(uuid=record_type_id)
+                errors['occurred_to'] = occurred_to_error
+
+        if errors.keys():
             # Raise a DRF ValidationError instead of a Django Core validation
             # error, since this exception needs to get handled by the serializer.
-            raise serializers.ValidationError({'geom': msg})
+            raise serializers.ValidationError(errors)
 
     def save(self, *args, **kwargs):
         """

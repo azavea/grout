@@ -134,6 +134,24 @@ class RecordQueryTestCase(TestCase):
             data={}
         )
 
+        # Create Records for a nongeospatial RecordType.
+        self.nongeospatial_record_type = RecordType.objects.create(
+            label='nongeospatial',
+            plural_label='nongeospatials',
+            geometry_type='none',
+        )
+        self.nongeospatial_schema = RecordSchema.objects.create(
+            record_type=self.nongeospatial_record_type,
+            version=1,
+            schema={}
+        )
+        self.nongeospatial_record = Record.objects.create(
+            schema=self.nongeospatial_schema,
+            occurred_from=timezone.now(),
+            occurred_to=timezone.now(),
+            data={}
+        )
+
         self.boundary = Boundary.objects.create(label='Parent for polygons')
 
     def test_record_type_filter(self):
@@ -173,9 +191,10 @@ class RecordQueryTestCase(TestCase):
         queryset = self.filter_backend.filter_polygon_id(self.queryset, 'geom', no_contains0_0.pk)
         self.assertEqual(queryset.count(), 0)
 
-        # Test leaving out an ID
+        # Test leaving out an ID (this should include nongeospatial records, too)
         full_record_count = len([self.id_record_1, self.id_record_2,
-                                 self.item_record_1, self.item_record_2])
+                                 self.item_record_1, self.item_record_2,
+                                 self.nongeospatial_record])
         queryset = self.filter_backend.filter_polygon_id(self.queryset, 'geom', None)
         self.assertEqual(queryset.count(), full_record_count)
 

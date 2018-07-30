@@ -1,11 +1,10 @@
 import os
 import json
-from datetime import datetime
 
-import pytz
 import django
 from django.contrib.gis.geos import (Point, Polygon, LinearRing, MultiPolygon,
                                     LineString)
+from django.utils import timezone
 
 from rest_framework import status
 
@@ -13,7 +12,7 @@ from tests.api_test_case import GroutAPITestCase
 from grout.models import (Boundary, BoundaryPolygon,
                           RecordSchema, RecordType, Record)
 from grout.views import RecordViewSet
-from grout.exceptions import GEOMETRY_TYPE_ERROR
+from grout.exceptions import GEOMETRY_TYPE_ERROR, DATETIME_REQUIRED, DATETIME_NOT_PERMITTED
 
 if django.VERSION < (2, 0):
     from django.core.urlresolvers import reverse
@@ -171,8 +170,8 @@ class RecordViewTestCase(GroutAPITestCase):
                                                        schema={})
         cls.point_record = Record.objects.create(schema=cls.point_schema,
                                                  data='{}',
-                                                 occurred_from=datetime.now(pytz.utc),
-                                                 occurred_to=datetime.now(pytz.utc),
+                                                 occurred_from=timezone.now(),
+                                                 occurred_to=timezone.now(),
                                                  geom=Point(0, 0))
 
         # Create dummy data for a Polygon Recordtype.
@@ -186,8 +185,8 @@ class RecordViewTestCase(GroutAPITestCase):
         cls.coords = ((0, 0), (0, 1), (1, 1), (1, 0), (0, 0))
         cls.polygon_record = Record.objects.create(schema=cls.polygon_schema,
                                                    data='{}',
-                                                   occurred_from=datetime.now(pytz.utc),
-                                                   occurred_to=datetime.now(pytz.utc),
+                                                   occurred_from=timezone.now(),
+                                                   occurred_to=timezone.now(),
                                                    geom=Polygon(LinearRing(cls.coords)))
 
         # Create dummy data for a MultiPolygon Recordtype.
@@ -200,8 +199,8 @@ class RecordViewTestCase(GroutAPITestCase):
                                                               schema={})
         cls.multipolygon_record = Record.objects.create(schema=cls.multipolygon_schema,
                                                         data='{}',
-                                                        occurred_from=datetime.now(pytz.utc),
-                                                        occurred_to=datetime.now(pytz.utc),
+                                                        occurred_from=timezone.now(),
+                                                        occurred_to=timezone.now(),
                                                         geom=MultiPolygon(Polygon(LinearRing(cls.coords))))
 
         # Create dummy data for a LineString Recordtype.
@@ -214,8 +213,8 @@ class RecordViewTestCase(GroutAPITestCase):
                                                             schema={})
         cls.linestring_record = Record.objects.create(schema=cls.linestring_schema,
                                                       data='{}',
-                                                      occurred_from=datetime.now(pytz.utc),
-                                                      occurred_to=datetime.now(pytz.utc),
+                                                      occurred_from=timezone.now(),
+                                                      occurred_to=timezone.now(),
                                                       geom=LineString(cls.coords))
 
         # Create dummy data for a RecordType with no geometry.
@@ -228,8 +227,20 @@ class RecordViewTestCase(GroutAPITestCase):
                                                                schema={})
         cls.nongeospatial_record = Record.objects.create(schema=cls.nongeospatial_schema,
                                                          data='{}',
-                                                         occurred_from=datetime.now(pytz.utc),
-                                                         occurred_to=datetime.now(pytz.utc))
+                                                         occurred_from=timezone.now(),
+                                                         occurred_to=timezone.now())
+
+        # Create dummy data for a RecordType with no datetime information.
+        cls.nontemporal_record_type = RecordType.objects.create(label='Nontemporal',
+                                                                plural_label='Nontemporals',
+                                                                geometry_type='point',
+                                                                temporal=False)
+        cls.nontemporal_schema = RecordSchema.objects.create(record_type=cls.nontemporal_record_type,
+                                                             version=1,
+                                                             schema={})
+        cls.nontemporal_record = Record.objects.create(schema=cls.nontemporal_schema,
+                                                       data='{}',
+                                                       geom=Point(0, 0))
 
         # The base endpoint for listing records.
         cls.record_endpt = reverse('record-list')
@@ -242,8 +253,8 @@ class RecordViewTestCase(GroutAPITestCase):
         geom = 'POLYGON(({points}))'.format(points=points)
         data = {
             'schema':self.polygon_schema.uuid,
-            'occurred_from': datetime.now(pytz.utc),
-            'occurred_to': datetime.now(pytz.utc),
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
             'geom': geom,
             'archived': False,
             'data': {},
@@ -263,8 +274,8 @@ class RecordViewTestCase(GroutAPITestCase):
         """
         data = {
             'schema':self.point_schema.uuid,
-            'occurred_from': datetime.now(pytz.utc),
-            'occurred_to': datetime.now(pytz.utc),
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
             'geom': 'POINT(0 0)',
             'archived': False,
             'data': {},
@@ -285,8 +296,8 @@ class RecordViewTestCase(GroutAPITestCase):
         geom = 'MULTIPOLYGON((({points})))'.format(points=points)
         data = {
             'schema':self.multipolygon_schema.uuid,
-            'occurred_from': datetime.now(pytz.utc),
-            'occurred_to': datetime.now(pytz.utc),
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
             'geom': geom,
             'archived': False,
             'data': {},
@@ -308,8 +319,8 @@ class RecordViewTestCase(GroutAPITestCase):
         geom = 'LINESTRING({points})'.format(points=points)
         data = {
             'schema':self.linestring_schema.uuid,
-            'occurred_from': datetime.now(pytz.utc),
-            'occurred_to': datetime.now(pytz.utc),
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
             'geom': geom,
             'archived': False,
             'data': {},
@@ -323,6 +334,38 @@ class RecordViewTestCase(GroutAPITestCase):
         expected_coords = LineString(self.coords).coords
         self.assertEqual(new_record.geom.coords, expected_coords)
 
+    def test_create_nongeospatial_record(self):
+        """
+        Test successfully creating a Record with no geometry.
+        """
+        data = {
+            'schema':self.nongeospatial_schema.uuid,
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+        self.assertIsNone(response.data.get('geom'))
+
+    def test_create_nontemporal_record(self):
+        """
+        Test successfully creating a Record with no datetime information.
+        """
+        data = {
+            'schema':self.nontemporal_schema.uuid,
+            'geom': 'POINT(0 0)',
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+        self.assertIsNone(response.data.get('occurred_from'), response.data)
+        self.assertIsNone(response.data.get('occurred_to'), response.data)
+
     def test_polygon_record_wrong_geometry_errors(self):
         """
         Test that uploading the wrong type of geometry to a Record in a
@@ -330,8 +373,8 @@ class RecordViewTestCase(GroutAPITestCase):
         """
         data = {
             'schema':self.polygon_schema.uuid,
-            'occurred_from': datetime.now(pytz.utc),
-            'occurred_to': datetime.now(pytz.utc),
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
             'geom': 'POINT(0 0)',  # Use a Point instead of a Polygon.
             'archived': False,
             'data': {},
@@ -355,8 +398,8 @@ class RecordViewTestCase(GroutAPITestCase):
         geom = 'POLYGON(({points}))'.format(points=points)
         data = {
             'schema':self.point_schema.uuid,
-            'occurred_from': datetime.now(pytz.utc),
-            'occurred_to': datetime.now(pytz.utc),
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
             'geom': geom,  # Use a Polygon instead of a Point.
             'archived': False,
             'data': {},
@@ -378,8 +421,8 @@ class RecordViewTestCase(GroutAPITestCase):
         """
         data = {
             'schema':self.multipolygon_schema.uuid,
-            'occurred_from': datetime.now(pytz.utc),
-            'occurred_to': datetime.now(pytz.utc),
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
             'geom': 'POINT(0 0)',  # Use a Point instead of a MultiPolygon.
             'archived': False,
             'data': {},
@@ -401,8 +444,8 @@ class RecordViewTestCase(GroutAPITestCase):
         """
         data = {
             'schema': self.linestring_schema.uuid,
-            'occurred_from': datetime.now(pytz.utc),
-            'occurred_to': datetime.now(pytz.utc),
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
             'geom': 'POINT(0 0)',  # Use a Point instead of a LineString.
             'archived': False,
             'data': {},
@@ -416,6 +459,75 @@ class RecordViewTestCase(GroutAPITestCase):
                                                   expected='LineString',
                                                   uuid=self.linestring_record_type.uuid)
         self.assertEqual(received_msg, expected_msg, response.content)
+
+    def test_nongeospatial_record_wrong_geometry_errors(self):
+        """
+        Test that uploading a geometry to a Record with a nongeospatial RecordType
+        raises an error.
+        """
+        data = {
+            'schema': self.nongeospatial_schema.uuid,
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
+            'geom': 'POINT(0 0)',
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
+        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Point',
+                                                  expected='None',
+                                                  uuid=self.nongeospatial_record_type.uuid)
+        self.assertEqual(received_msg, expected_msg, response.content)
+
+    def test_nontemporal_record_with_datetime_info_errors(self):
+        """
+        Test that uploading datetime information to a nontemporal Record
+        raises an error.
+        """
+        data = {
+            'schema': self.nontemporal_schema.uuid,
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
+            'geom': 'POINT(0 0)',
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        min_msg = json.loads(response.content.decode('utf-8')).get('occurred_from')
+        max_msg = json.loads(response.content.decode('utf-8')).get('occurred_to')
+        expected_msg = DATETIME_NOT_PERMITTED.format(uuid=self.nontemporal_record_type.uuid)
+
+        self.assertEqual(min_msg, expected_msg, response.content)
+        self.assertEqual(max_msg, expected_msg, response.content)
+
+    def test_temporal_record_with_no_datetime_info_errors(self):
+        """
+        Test that leaving out datetime information for a temporal Record
+        raises an error.
+        """
+        data = {
+            'schema': self.point_schema.uuid,
+            'geom': 'POINT(0 0)',
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        min_msg = json.loads(response.content.decode('utf-8')).get('occurred_from')
+        max_msg = json.loads(response.content.decode('utf-8')).get('occurred_to')
+        expected_msg = DATETIME_REQUIRED.format(uuid=self.point_record_type.uuid)
+
+        self.assertEqual(min_msg, expected_msg, response.content)
+        self.assertEqual(max_msg, expected_msg, response.content)
 
     def test_get_polygon_record(self):
         """

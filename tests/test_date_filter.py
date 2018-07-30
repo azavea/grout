@@ -28,7 +28,6 @@ class DateFilterBackendTestCase(TestCase):
                                                  '123')
 
         self.factory = APIRequestFactory()
-        self.queryset = models.RecordSchema.objects.all()
 
         self.item_type = models.RecordType.objects.create(label='item', plural_label='items')
 
@@ -72,12 +71,27 @@ class DateFilterBackendTestCase(TestCase):
             data={}
         )
 
+        # Create Records for a nontemporal RecordType.
+        self.nontemporal_record_type = models.RecordType.objects.create(
+            label='Nontemporal',
+            plural_label='Nontemporals',
+            temporal=False
+        )
+        self.nontemporal_schema = models.RecordSchema.objects.create(
+            record_type=self.nontemporal_record_type,
+            version=1,
+            schema={}
+        )
+        self.nontemporal_record = models.Record.objects.create(
+            schema=self.nontemporal_schema,
+            geom='POINT (0 0)',
+            data={}
+        )
+
         self.view = RecordViewSet.as_view({'get': 'list'})
 
     def test_valid_datefilter(self):
         """ Test filtering on dates """
-        self.assertEqual(len(self.queryset), 1)
-
         req1 = self.factory.get('/foo/', {'occurred_max': self.a_date})
         force_authenticate(req1, self.user)
         res1 = self.view(req1).render()
@@ -89,12 +103,15 @@ class DateFilterBackendTestCase(TestCase):
         self.assertEqual(json.loads(res2.content.decode('utf-8'))['count'], 2)
 
     def test_missing_min_max(self):
-        """Test that forgetting both `occurred_min` and `occurred_max` returns all records."""
+        """
+        Test that forgetting both `occurred_min` and `occurred_max` returns all records,
+        including the nontemporal record.
+        """
         missing_range_req = self.factory.get('/foo/')
         force_authenticate(missing_range_req, self.user)
         missing_range_res = self.view(missing_range_req).render()
 
-        self.assertEqual(json.loads(missing_range_res.content.decode('utf-8'))['count'], 2)
+        self.assertEqual(json.loads(missing_range_res.content.decode('utf-8'))['count'], 3)
 
     def test_missing_timezone(self):
         """Test that forgetting timezone information raises an error."""
