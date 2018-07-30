@@ -194,7 +194,10 @@ class DateRangeFilterBackend(BaseFilterBackend):
         if not min_date.tzinfo or not max_date.tzinfo:
             raise QueryParameterException('datetimes', self.ERR_MSG)
 
-        return queryset.filter(occurred_from__gte=min_date, occurred_from__lte=max_date)
+        return queryset.filter(occurred_from__gte=min_date)\
+                       .filter(occurred_from__lte=max_date)\
+                       .filter(occurred_to__gte=min_date)\
+                       .filter(occurred_to__lte=max_date)
 
 
 class JsonBFilterBackend(BaseFilterBackend):

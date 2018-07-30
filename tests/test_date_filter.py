@@ -53,19 +53,20 @@ class DateFilterBackendTestCase(TestCase):
                                                   version=1,
                                                   schema=self.item_schema)
 
-        self.a_date       = parse('2015-01-01T00:00:00+00:00')
+        self.a_date = parse('2015-01-01T00:00:00+00:00')
         self.a_later_date = parse('2015-02-22T00:00:00+00:00')
+        self.an_even_later_date = parse('2018-07-30T00:00:00+00:00')
 
         self.early_record = models.Record.objects.create(
             occurred_from=self.a_date,  # A DATE
-            occurred_to=self.a_date,
+            occurred_to=self.a_later_date,
             geom='POINT (0 0)',
             schema=self.schema,
             data={}
         )
         self.later_record = models.Record.objects.create(
             occurred_from=self.a_later_date,  # A LATER DATE
-            occurred_to=self.a_later_date,
+            occurred_to=self.an_even_later_date,
             geom='POINT (0 0)',
             schema=self.schema,
             data={}
@@ -92,15 +93,31 @@ class DateFilterBackendTestCase(TestCase):
 
     def test_valid_datefilter(self):
         """ Test filtering on dates """
+        req3 = self.factory.get('/foo/', {'occurred_min': self.a_date})
+        force_authenticate(req3, self.user)
+        res3 = self.view(req3).render()
+        self.assertEqual(json.loads(res3.content.decode('utf-8'))['count'], 2)
+
+        req4 = self.factory.get('/foo/', {'occurred_min': self.a_later_date})
+        force_authenticate(req4, self.user)
+        res4 = self.view(req4).render()
+        self.assertEqual(json.loads(res4.content.decode('utf-8'))['count'], 1)
+
         req1 = self.factory.get('/foo/', {'occurred_max': self.a_date})
         force_authenticate(req1, self.user)
         res1 = self.view(req1).render()
-        self.assertEqual(json.loads(res1.content.decode('utf-8'))['count'], 1)
+        self.assertEqual(json.loads(res1.content.decode('utf-8'))['count'], 0)
 
         req2 = self.factory.get('/foo/', {'occurred_max': self.a_later_date})
         force_authenticate(req2, self.user)
         res2 = self.view(req2).render()
-        self.assertEqual(json.loads(res2.content.decode('utf-8'))['count'], 2)
+        self.assertEqual(json.loads(res2.content.decode('utf-8'))['count'], 1)
+
+        req5 = self.factory.get('/foo/', {'occurred_min': self.a_date,
+                                          'occurred_max': self.a_later_date})
+        force_authenticate(req5, self.user)
+        res5 = self.view(req5).render()
+        self.assertEqual(json.loads(res5.content.decode('utf-8'))['count'], 1)
 
     def test_missing_min_max(self):
         """
