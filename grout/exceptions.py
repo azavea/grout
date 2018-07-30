@@ -17,3 +17,6 @@ class QueryParameterException(APIException):
 
         def __str__(self):
             return repr(self.detail)
+
+GEOMETRY_TYPE_ERROR = ("Incoming Record geometry '{incoming}' does not match the " +
+                       "expected geometry type '{expected}' of the RecordType {uuid}.")

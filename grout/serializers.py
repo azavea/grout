@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 class RecordSerializer(GeoModelSerializer):
-    # TODO: Remove the model coupling in this class.
 
     data = JsonBField()
 

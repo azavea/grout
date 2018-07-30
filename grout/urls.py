@@ -10,9 +10,9 @@ from grout import views
 router = routers.DefaultRouter()
 router.register('boundaries', views.BoundaryViewSet)
 router.register('boundarypolygons', views.BoundaryPolygonViewSet)
+router.register('records', views.RecordViewSet)
 router.register('recordschemas', views.RecordSchemaViewSet)
 router.register('recordtypes', views.RecordTypeViewSet)
-router.register('records', views.RecordViewSet)
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),

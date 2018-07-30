@@ -7,12 +7,14 @@ from django.contrib.gis.db import models
 from django.contrib.gis.gdal import DataSource as GDALDataSource
 from django.contrib.postgres.fields import JSONField
 from django.core.validators import MinLengthValidator
+from rest_framework import serializers
 
 import jsonschema
 
 from grout.imports.shapefile import (extract_zip_to_temp_dir,
                                      get_shapefiles_in_dir,
                                      make_multipolygon)
+from grout.exceptions import GEOMETRY_TYPE_ERROR
 
 
 class GroutModel(models.Model):
@@ -32,11 +34,11 @@ class RecordType(GroutModel):
     Store metadata for a class of Records.
     """
     class GeometryType(object):
-        POINT = 'Point'
-        POLYGON = 'Polygon'
-        MULTIPOLYGON = 'MultiPolygon'
-        LINESTRING = 'LineString'
-        NONE = 'None'
+        POINT = 'point'
+        POLYGON = 'polygon'
+        MULTIPOLYGON = 'multipolygon'
+        LINESTRING = 'linestring'
+        NONE = 'none'
         CHOICES = (
             (POINT, 'Point'),
             (POLYGON, 'Polygon'),
@@ -99,7 +101,7 @@ class Record(GroutModel):
     schema defined by a certain RecordSchema.
     """
     schema = models.ForeignKey('RecordSchema', on_delete=models.CASCADE)
-    data = JSONField()
+    data = JSONField(blank=True)
     archived = models.BooleanField(default=False)
     occurred_from = models.DateTimeField(null=True, blank=True)
     occurred_to = models.DateTimeField(null=True, blank=True)
@@ -108,6 +110,34 @@ class Record(GroutModel):
 
     class Meta(object):
         ordering = ('-created',)
+
+    def clean(self):
+        """
+        Provide custom field validation for this model.
+        """
+        # Make sure that incoming geometry matches the geometry_type of the
+        # RecordType for this Record.
+        expected_geotype = self.schema.record_type.get_geometry_type_display()
+
+        if self.geom:
+            incoming_geotype = self.geom.geom_type
+        else:
+            incoming_geotype = 'None'
+
+        if incoming_geotype != expected_geotype:
+            msg = GEOMETRY_TYPE_ERROR.format(incoming=incoming_geotype,
+                                             expected=expected_geotype,
+                                             uuid=self.schema.record_type.uuid)
+            # Raise a DRF ValidationError instead of a Django Core validation
+            # error, since this exception needs to get handled by the serializer.
+            raise serializers.ValidationError({'geom': msg})
+
+    def save(self, *args, **kwargs):
+        """
+        Extend the model's save method to run custom field validators.
+        """
+        self.full_clean()
+        return super(Record, self).save(*args, **kwargs)
 
 
 class Boundary(GroutModel):

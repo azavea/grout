@@ -50,7 +50,7 @@ class BoundaryPolygonViewSet(viewsets.ModelViewSet):
 class RecordViewSet(viewsets.ModelViewSet):
     queryset = Record.objects.all()
     serializer_class = RecordSerializer
-    filterset_class = RecordFilter
+    filter_class = RecordFilter
     bbox_filter_field = 'geom'
     jsonb_filter_field = 'data'
     filter_backends = (InBBoxFilter, JsonBFilterBackend,

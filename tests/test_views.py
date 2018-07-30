@@ -13,6 +13,7 @@ from tests.api_test_case import GroutAPITestCase
 from grout.models import (Boundary, BoundaryPolygon,
                           RecordSchema, RecordType, Record)
 from grout.views import RecordViewSet
+from grout.exceptions import GEOMETRY_TYPE_ERROR
 
 if django.VERSION < (2, 0):
     from django.core.urlresolvers import reverse
@@ -169,7 +170,7 @@ class RecordViewTestCase(GroutAPITestCase):
                                                        version=1,
                                                        schema={})
         cls.point_record = Record.objects.create(schema=cls.point_schema,
-                                                 data={},
+                                                 data='{}',
                                                  occurred_from=datetime.now(pytz.utc),
                                                  occurred_to=datetime.now(pytz.utc),
                                                  geom=Point(0, 0))
@@ -184,7 +185,7 @@ class RecordViewTestCase(GroutAPITestCase):
                                                          schema={})
         cls.coords = ((0, 0), (0, 1), (1, 1), (1, 0), (0, 0))
         cls.polygon_record = Record.objects.create(schema=cls.polygon_schema,
-                                                   data={},
+                                                   data='{}',
                                                    occurred_from=datetime.now(pytz.utc),
                                                    occurred_to=datetime.now(pytz.utc),
                                                    geom=Polygon(LinearRing(cls.coords)))
@@ -198,7 +199,7 @@ class RecordViewTestCase(GroutAPITestCase):
                                                               version=1,
                                                               schema={})
         cls.multipolygon_record = Record.objects.create(schema=cls.multipolygon_schema,
-                                                        data={},
+                                                        data='{}',
                                                         occurred_from=datetime.now(pytz.utc),
                                                         occurred_to=datetime.now(pytz.utc),
                                                         geom=MultiPolygon(Polygon(LinearRing(cls.coords))))
@@ -212,7 +213,7 @@ class RecordViewTestCase(GroutAPITestCase):
                                                             version=1,
                                                             schema={})
         cls.linestring_record = Record.objects.create(schema=cls.linestring_schema,
-                                                      data={},
+                                                      data='{}',
                                                       occurred_from=datetime.now(pytz.utc),
                                                       occurred_to=datetime.now(pytz.utc),
                                                       geom=LineString(cls.coords))
@@ -226,7 +227,7 @@ class RecordViewTestCase(GroutAPITestCase):
                                                                version=1,
                                                                schema={})
         cls.nongeospatial_record = Record.objects.create(schema=cls.nongeospatial_schema,
-                                                         data={},
+                                                         data='{}',
                                                          occurred_from=datetime.now(pytz.utc),
                                                          occurred_to=datetime.now(pytz.utc))
 
@@ -237,8 +238,8 @@ class RecordViewTestCase(GroutAPITestCase):
         """
         Test successfully creating a Record with polygon geometry.
         """
-        points = ', '.join('POINT(%d, %d)' % (x, y) for x, y in self.coords)
-        geom = 'POLYGON(LINEARRING({points}))'.format(points=points)
+        points = ', '.join('%d %d' % (x, y) for x, y in self.coords)
+        geom = 'POLYGON(({points}))'.format(points=points)
         data = {
             'schema':self.polygon_schema.uuid,
             'occurred_from': datetime.now(pytz.utc),
@@ -251,6 +252,11 @@ class RecordViewTestCase(GroutAPITestCase):
         response = self.client.post(self.record_endpt, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
 
+        uuid = response.data['uuid']
+        new_record = Record.objects.get(uuid=uuid)
+        expected_coords = Polygon(LinearRing(self.coords)).coords
+        self.assertEqual(new_record.geom.coords, expected_coords)
+
     def test_create_point_record(self):
         """
         Test successfully creating a Record with point geometry.
@@ -259,7 +265,7 @@ class RecordViewTestCase(GroutAPITestCase):
             'schema':self.point_schema.uuid,
             'occurred_from': datetime.now(pytz.utc),
             'occurred_to': datetime.now(pytz.utc),
-            'geom': 'POINT(0, 0)',
+            'geom': 'POINT(0 0)',
             'archived': False,
             'data': {},
         }
@@ -269,14 +275,14 @@ class RecordViewTestCase(GroutAPITestCase):
 
         uuid = response.data['uuid']
         new_record = Record.objects.get(uuid=uuid)
-        self.assertEqual(new_record.geom, Point(0, 0))
+        self.assertEqual(new_record.geom.coords, Point(0, 0).coords)
 
     def test_create_multipolygon_record(self):
         """
         Test successfully creating a Record with multipolygon geometry.
         """
-        points = ', '.join('POINT(%d, %d)' % (x, y) for x, y in self.coords)
-        geom = 'MULTIPOLYGON(POLYGON(LINEARRING({points})))'.format(points=points)
+        points = ', '.join('%d %d' % (x, y) for x, y in self.coords)
+        geom = 'MULTIPOLYGON((({points})))'.format(points=points)
         data = {
             'schema':self.multipolygon_schema.uuid,
             'occurred_from': datetime.now(pytz.utc),
@@ -289,11 +295,16 @@ class RecordViewTestCase(GroutAPITestCase):
         response = self.client.post(self.record_endpt, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
 
+        uuid = response.data['uuid']
+        new_record = Record.objects.get(uuid=uuid)
+        expected_coords = MultiPolygon(Polygon(LinearRing(self.coords))).coords
+        self.assertEqual(new_record.geom.coords, expected_coords)
+
     def test_create_linestring_record(self):
         """
         Test successfully creating a Record with linestring geometry.
         """
-        points = ', '.join('POINT(%d, %d)' % (x, y) for x, y in self.coords)
+        points = ', '.join('%d %d' % (x, y) for x, y in self.coords)
         geom = 'LINESTRING({points})'.format(points=points)
         data = {
             'schema':self.linestring_schema.uuid,
@@ -307,6 +318,11 @@ class RecordViewTestCase(GroutAPITestCase):
         response = self.client.post(self.record_endpt, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
 
+        uuid = response.data['uuid']
+        new_record = Record.objects.get(uuid=uuid)
+        expected_coords = LineString(self.coords).coords
+        self.assertEqual(new_record.geom.coords, expected_coords)
+
     def test_polygon_record_wrong_geometry_errors(self):
         """
         Test that uploading the wrong type of geometry to a Record in a
@@ -316,7 +332,7 @@ class RecordViewTestCase(GroutAPITestCase):
             'schema':self.polygon_schema.uuid,
             'occurred_from': datetime.now(pytz.utc),
             'occurred_to': datetime.now(pytz.utc),
-            'geom': 'POINT(0, 0)',  # Use a Point instead of a Polygon.
+            'geom': 'POINT(0 0)',  # Use a Point instead of a Polygon.
             'archived': False,
             'data': {},
         }
@@ -324,9 +340,10 @@ class RecordViewTestCase(GroutAPITestCase):
         response = self.client.post(self.record_endpt, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
 
-        received_msg = json.loads(response.content.decode('utf-8')).get('detail')
-        expected_msg = RecordViewSet.BAD_GEOMETRY.format(input='Point',
-                                                         expected='Polygon')
+        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
+        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Point',
+                                                  expected='Polygon',
+                                                  uuid=self.polygon_record_type.uuid)
         self.assertEqual(received_msg, expected_msg, response.content)
 
     def test_point_record_wrong_geometry_errors(self):
@@ -334,8 +351,8 @@ class RecordViewTestCase(GroutAPITestCase):
         Test that uploading the wrong type of geometry to a Record in a
         Point RecordType raises an error.
         """
-        points = ', '.join('POINT(%d, %d)' % (x, y) for x, y in self.coords)
-        geom = 'POLYGON(LINEARRING({points}))'.format(points=points)
+        points = ', '.join('%d %d' % (x, y) for x, y in self.coords)
+        geom = 'POLYGON(({points}))'.format(points=points)
         data = {
             'schema':self.point_schema.uuid,
             'occurred_from': datetime.now(pytz.utc),
@@ -348,9 +365,10 @@ class RecordViewTestCase(GroutAPITestCase):
         response = self.client.post(self.record_endpt, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
 
-        received_msg = json.loads(response.content.decode('utf-8')).get('detail')
-        expected_msg = RecordViewSet.BAD_GEOMETRY.format(input='Polygon',
-                                                         expected='Point')
+        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
+        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Polygon',
+                                                  expected='Point',
+                                                  uuid=self.point_record_type.uuid)
         self.assertEqual(received_msg, expected_msg, response.content)
 
     def test_multipolygon_record_wrong_geometry_errors(self):
@@ -362,7 +380,7 @@ class RecordViewTestCase(GroutAPITestCase):
             'schema':self.multipolygon_schema.uuid,
             'occurred_from': datetime.now(pytz.utc),
             'occurred_to': datetime.now(pytz.utc),
-            'geom': 'POINT(0, 0)',  # Use a Point instead of a MultiPolygon.
+            'geom': 'POINT(0 0)',  # Use a Point instead of a MultiPolygon.
             'archived': False,
             'data': {},
         }
@@ -370,9 +388,10 @@ class RecordViewTestCase(GroutAPITestCase):
         response = self.client.post(self.record_endpt, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
 
-        received_msg = json.loads(response.content.decode('utf-8')).get('detail')
-        expected_msg = RecordViewSet.BAD_GEOMETRY.format(input='Point',
-                                                         expected='MultiPolygon')
+        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
+        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Point',
+                                                  expected='MultiPolygon',
+                                                  uuid=self.multipolygon_record_type.uuid)
         self.assertEqual(received_msg, expected_msg, response.content)
 
     def test_linestring_record_wrong_geometry_errors(self):
@@ -384,7 +403,7 @@ class RecordViewTestCase(GroutAPITestCase):
             'schema': self.linestring_schema.uuid,
             'occurred_from': datetime.now(pytz.utc),
             'occurred_to': datetime.now(pytz.utc),
-            'geom': 'POINT(0, 0)',  # Use a Point instead of a LineString.
+            'geom': 'POINT(0 0)',  # Use a Point instead of a LineString.
             'archived': False,
             'data': {},
         }
@@ -392,9 +411,10 @@ class RecordViewTestCase(GroutAPITestCase):
         response = self.client.post(self.record_endpt, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
 
-        received_msg = json.loads(response.content.decode('utf-8')).get('detail')
-        expected_msg = RecordViewSet.BAD_GEOMETRY.format(input='Point',
-                                                         expected='LineString')
+        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
+        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Point',
+                                                  expected='LineString',
+                                                  uuid=self.linestring_record_type.uuid)
         self.assertEqual(received_msg, expected_msg, response.content)
 
     def test_get_polygon_record(self):
@@ -409,8 +429,20 @@ class RecordViewTestCase(GroutAPITestCase):
 
         response_data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response_data['count'], 1)
-        self.assertEqual(response_data['results'][0]['uuid'], self.polygon_record.uuid)
-        self.assertEqual(response_data['results'][0]['geom'], self.polygon_record.geom)
+
+        response_entity = response_data['results'][0]
+        self.assertEqual(response_entity['uuid'],
+                         str(self.polygon_record.uuid),
+                         response_entity)
+
+        response_geotype = response_entity['geom']['type']
+        self.assertEqual(response_geotype, 'Polygon', response_entity)
+
+        response_coordinates = response_entity['geom']['coordinates']
+        # Format the tuples in the expected coordinates as lists to match the response,
+        # which comes in as JSON.
+        expected_coordinates = json.loads(json.dumps(self.polygon_record.geom.coords))
+        self.assertEqual(response_coordinates, expected_coordinates, response_entity)
 
     def test_get_point_record(self):
         """
@@ -424,8 +456,20 @@ class RecordViewTestCase(GroutAPITestCase):
 
         response_data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response_data['count'], 1)
-        self.assertEqual(response_data['results'][0]['uuid'], self.point_record.uuid)
-        self.assertEqual(response_data['results'][0]['geom'], self.point_record.geom)
+
+        response_entity = response_data['results'][0]
+        self.assertEqual(response_entity['uuid'],
+                         str(self.point_record.uuid),
+                         response_entity)
+
+        response_geotype = response_entity['geom']['type']
+        self.assertEqual(response_geotype, 'Point', response_entity)
+
+        response_coordinates = response_entity['geom']['coordinates']
+        # Format the tuples in the expected coordinates as lists to match the response,
+        # which comes in as JSON.
+        expected_coordinates = json.loads(json.dumps(self.point_record.geom.coords))
+        self.assertEqual(response_coordinates, expected_coordinates, response_entity)
 
     def test_get_multipolygon_record(self):
         """
@@ -439,8 +483,20 @@ class RecordViewTestCase(GroutAPITestCase):
 
         response_data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response_data['count'], 1)
-        self.assertEqual(response_data['results'][0]['uuid'], self.multipolygon_record.uuid)
-        self.assertEqual(response_data['results'][0]['geom'], self.multipolygon_record.geom)
+
+        response_entity = response_data['results'][0]
+        self.assertEqual(response_entity['uuid'],
+                         str(self.multipolygon_record.uuid),
+                         response_entity)
+
+        response_geotype = response_entity['geom']['type']
+        self.assertEqual(response_geotype, 'MultiPolygon', response_entity)
+
+        response_coordinates = response_entity['geom']['coordinates']
+        # Format the tuples in the expected coordinates as lists to match the response,
+        # which comes in as JSON.
+        expected_coordinates = json.loads(json.dumps(self.multipolygon_record.geom.coords))
+        self.assertEqual(response_coordinates, expected_coordinates, response_entity)
 
     def test_get_linestring_record(self):
         """
@@ -453,9 +509,19 @@ class RecordViewTestCase(GroutAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
 
         response_data = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response_data['count'], 1)
-        self.assertEqual(response_data['results'][0]['uuid'], self.linestring_record.uuid)
-        self.assertEqual(response_data['results'][0]['geom'], self.linestring_record.geom)
+        self.assertEqual(response_data['count'], 1, response_data)
+
+        response_entity = response_data['results'][0]
+        self.assertEqual(response_entity['uuid'], str(self.linestring_record.uuid), response_entity)
+
+        response_geotype = response_entity['geom']['type']
+        self.assertEqual(response_geotype, 'LineString', response_entity)
+
+        response_coordinates = response_entity['geom']['coordinates']
+        # Format the tuples in the expected coordinates as lists to match the response,
+        # which comes in as JSON.
+        expected_coordinates = json.loads(json.dumps(self.linestring_record.geom.coords))
+        self.assertEqual(response_coordinates, expected_coordinates, response_entity)
 
 
 class BoundaryViewTestCase(GroutAPITestCase):
