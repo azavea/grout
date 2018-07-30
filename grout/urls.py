@@ -12,10 +12,7 @@ router.register('boundaries', views.BoundaryViewSet)
 router.register('boundarypolygons', views.BoundaryPolygonViewSet)
 router.register('recordschemas', views.RecordSchemaViewSet)
 router.register('recordtypes', views.RecordTypeViewSet)
-
-# Since RecordViewSet does not have a predefined queryset, it requires the
-# base_name attribute during registration.
-router.register('records', views.RecordViewSet, base_name='record')
+router.register('records', views.RecordViewSet)
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),

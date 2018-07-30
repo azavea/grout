@@ -36,14 +36,6 @@ class RecordFilter(GeoFilterSet):
     polygon = django_filters.Filter(field_name='polygon', method='filter_polygon')
     polygon_id = django_filters.Filter(field_name='polygon_id', method='filter_polygon_id')
 
-    # While this field might be simple enough to filter using the automatically-
-    # generated filters provided by django-filter's Meta class (see
-    # https://django-filter.readthedocs.io/en/latest/ref/filterset.html#meta-options),
-    # we don't know the exact model definition of the incoming queryset, so
-    # the fields can't be extracted automatically. Instead, define the filter
-    # explicitly.
-    archived = django_filters.Filter(field_name='archived', method='filter_by_archived')
-
     def filter_polygon(self, queryset, field_name, geojson):
         """ Method filter for arbitrary polygon, sent in as geojson.
         """
@@ -86,9 +78,10 @@ class RecordFilter(GeoFilterSet):
         """
         return queryset.filter(schema__record_type=value)
 
-    def filter_by_archived(self, queryset, field_name, value):
-        """Filter Records based on the 'archived' flag."""
-        return queryset.filter(archived=value)
+    class Meta:
+        model = Record
+        fields = ['data', 'record_type', 'polygon', 'polygon_id', 'archived']
+        filter_overrides = FILTER_OVERRIDES
 
 
 class RecordTypeFilter(django_filters.FilterSet):
@@ -145,43 +138,7 @@ class BoundaryPolygonFilter(GeoFilterSet):
         filter_overrides = FILTER_OVERRIDES
 
 
-class GenericFilterBackend(BaseFilterBackend):
-    """
-    Override django-filter's BaseFilterBackend to remove the requirement that
-    a backend's filterset class have an embedded `Meta` class.
-
-    Note that this issue has been fixed in django-filter 2.0, which we have
-    delayed upgrading to since we need to continue supporting Python 2. Once
-    that upgrade happens, this override should no longer be necessary.
-    """
-    def get_filter_class(self, view, queryset=None):
-        """
-        Return the django-filters `FilterSet` used to filter the queryset.
-        """
-        filter_class = getattr(view, 'filter_class', None)
-        filter_fields = getattr(view, 'filter_fields', None)
-
-        if filter_class:
-            # Originally, this method would attempt to access the `model` attribute of the
-            # embedded `Meta` class on the FilterSet, which would error if your
-            # FilterSet had no predefined model. That portion of the code is
-            # the only path that has been changed in this method.
-            return filter_class
-
-        if filter_fields:
-            MetaBase = getattr(self.default_filter_set, 'Meta', object)
-
-            class AutoFilterSet(self.default_filter_set):
-                class Meta(MetaBase):
-                    model = queryset.model
-                    fields = filter_fields
-
-            return AutoFilterSet
-
-        return None
-
-
-class DateRangeFilterBackend(GenericFilterBackend):
+class DateRangeFilterBackend(BaseFilterBackend):
     # TODO: This class should be a method on the RecordFilter, not a backend. 
     """Used to filter querysets based on a given START_FIELD and END_FIELD
 
@@ -240,7 +197,7 @@ class DateRangeFilterBackend(GenericFilterBackend):
         return queryset.filter(occurred_from__gte=min_date, occurred_from__lte=max_date)
 
 
-class JsonBFilterBackend(GenericFilterBackend):
+class JsonBFilterBackend(BaseFilterBackend):
     """ Generic configurable filter for JsonBField
 
     Requires the following properties, configured on the view using this filter backend:

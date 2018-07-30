@@ -2,8 +2,6 @@ from collections import OrderedDict
 from datetime import datetime, timedelta
 
 from django.db import IntegrityError
-from django.db.models import Value
-from django.contrib.gis.db import models
 
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import detail_route
@@ -15,11 +13,6 @@ from rest_framework_gis.filters import InBBoxFilter
 from grout.models import (Boundary,
                           BoundaryPolygon,
                           Record,
-                          PointRecord,
-                          PolygonRecord,
-                          FlexibleRecord,
-                          TemporalPolygonRecord,
-                          TemporalFlexibleRecord,
                           RecordType,
                           RecordSchema)
 from grout.serializers import (BoundarySerializer,
@@ -55,86 +48,16 @@ class BoundaryPolygonViewSet(viewsets.ModelViewSet):
 
 
 class RecordViewSet(viewsets.ModelViewSet):
+    queryset = Record.objects.all()
     serializer_class = RecordSerializer
-    filter_class = RecordFilter
+    filterset_class = RecordFilter
     bbox_filter_field = 'geom'
     jsonb_filter_field = 'data'
-    filter_backends = (InBBoxFilter, JsonBFilterBackend, DateRangeFilterBackend)
+    filter_backends = (InBBoxFilter, JsonBFilterBackend,
+                       DjangoFilterBackend, DateRangeFilterBackend)
 
-    VALID_GEOTYPES = ['point', 'polygon', 'none']
-    GEOTYPE_NOT_VALID = "The 'geometry_type' parameter must be one of: " + ', '.join(VALID_GEOTYPES)
+    # Error messages.
     BAD_GEOMETRY = "The posted geometry was parsed as a {input}, when it should be a {expected}."
-    GEOTYPE_AND_POLYGON = ("The 'geometry_type' parameter cannot be 'none' when " +
-                           "either of the 'polygon' or 'polygon_id' parameters is present.")
-    INVALID_DATETIMES = "'{none}' cannot be 'none' when '{timestamp}' is a timestamp."
-
-    def get_queryset(self):
-        '''
-        Check for the `geometry_type` and `occurred_min`/`occurred_max`
-        query parameters. If they exist, use them to generate a queryset for
-        the appropriate class of Record.
-        '''
-        # Parse query parameters that can have an effect on the base queryset.
-        geometry_type = self.request.query_params.get('geometry_type')
-        occurred_min = self.request.query_params.get('occurred_min')
-        occurred_max = self.request.query_params.get('occurred_max')
-        polygon = self.request.query_params.get('polygon')
-        polygon_id = self.request.query_params.get('polygon_id')
-
-        # If one of the datetime parameters is 'none', make sure that the other
-        # is not a timestamp.
-        if occurred_min == 'none' and (occurred_max is not None and occurred_max != 'none'):
-            raise ParseError(self.INVALID_DATETIMES.format(none='occurred_min',
-                                                           timestamp='occurred_max'))
-        elif occurred_max == 'none' and (occurred_min is not None and occurred_min != 'none'):
-            raise ParseError(self.INVALID_DATETIMES.format(none='occurred_max',
-                                                           timestamp='occurred_min'))
-
-        # Temporal Records are the default, so only filter by nontemporal records
-        # if a 'none' parameter is explicitly set.
-        filtering_by_time = occurred_min != 'none' and occurred_max != 'none'
-
-        if geometry_type:
-            # Check that the geometry_type parameter is valid.
-            if geometry_type not in self.VALID_GEOTYPES:
-                raise ParseError(self.GEOTYPE_NOT_VALID)
-
-            if geometry_type == 'none':
-                if polygon is not None or polygon_id is not None:
-                    # The user cannot request non-geospatial records and also
-                    # attempt to filter by a geometry.
-                    raise ParseError(self.GEOTYPE_AND_POLYGON)
-
-                if filtering_by_time:
-                    return TemporalFlexibleRecord.objects.all()
-                else:
-                    return FlexibleRecord.objects.all()
-
-            elif geometry_type == 'polygon':
-                if filtering_by_time:
-                    return TemporalPolygonRecord.objects.all()
-                else:
-                    return PolygonRecord.objects.all()
-
-            elif geometry_type == 'point':
-                if filtering_by_time:
-                    return Record.objects.all()
-                else:
-                    return PointRecord.objects.all()
-
-            else:
-                # Since we validated the geometry_type parameters earlier, it
-                # should be impossible to reach this portion of the code. However,
-                # for the sake of safety, raise an error if the parameter is
-                # somehow unhandled.
-                raise ParseError(self.GEOTYPE_NOT_VALID)
-        else:
-            # If no `geometry_type` is specified, the Record (Point) class is
-            # the default queryset.
-            if filtering_by_time:
-                return Record.objects.all()
-            else:
-                return PointRecord.objects.all()
 
 
 class RecordTypeViewSet(viewsets.ModelViewSet):

@@ -31,10 +31,28 @@ class RecordType(GroutModel):
     """
     Store metadata for a class of Records.
     """
+    class GeometryType(object):
+        POINT = 'Point'
+        POLYGON = 'Polygon'
+        MULTIPOLYGON = 'MultiPolygon'
+        LINESTRING = 'LineString'
+        NONE = 'None'
+        CHOICES = (
+            (POINT, 'Point'),
+            (POLYGON, 'Polygon'),
+            (MULTIPOLYGON, 'MultiPolygon'),
+            (LINESTRING, 'LineString'),
+            (NONE, 'None'),
+        )
+
     label = models.CharField(max_length=64)
     plural_label = models.CharField(max_length=64)
     description = models.TextField(blank=True, null=True)
     active = models.BooleanField(default=True)
+    geometry_type = models.CharField(max_length=12,
+                                     choices=GeometryType.CHOICES,
+                                     default=GeometryType.POINT)
+    temporal = models.BooleanField(default=True)
 
     def get_current_schema(self):
         schemas = self.schemas.order_by('-version')
@@ -75,136 +93,19 @@ class RecordSchema(GroutModel):
         jsonschema.Draft4Validator.check_schema(schema)
 
 
-class AbstractFlexibleRecord(GroutModel):
+class Record(GroutModel):
     """
-    Base class for flexible records.
+    An entity in the database. An entry of a given RecordType, following a
+    schema defined by a certain RecordSchema.
     """
     schema = models.ForeignKey('RecordSchema', on_delete=models.CASCADE)
     data = JSONField()
     archived = models.BooleanField(default=False)
-
-    class Meta(object):
-        abstract = True
-
-
-class DateTimeRange(models.Model):
-    """
-    Base class for a flexible record with date and time attributes.
-    """
-    occurred_from = models.DateTimeField()
-    occurred_to = models.DateTimeField()
-
-    class Meta(object):
-        abstract = True
-
-
-class PointFields(models.Model):
-    """
-    Base class for a record with point geometry.
-    """
-    class GeometryTypes(object):
-        POINT = 'point'
-        CHOICES = ((POINT, 'Point'),)
-
-    geom = models.PointField(srid=settings.GROUT['SRID'])
+    occurred_from = models.DateTimeField(null=True, blank=True)
+    occurred_to = models.DateTimeField(null=True, blank=True)
+    geom = models.GeometryField(srid=settings.GROUT['SRID'], null=True, blank=True)
     location_text = models.CharField(max_length=200, null=True, blank=True)
-    geometry_type = models.CharField(max_length=7,
-                                     choices=GeometryTypes.CHOICES,
-                                     default=GeometryTypes.POINT)
 
-    class Meta(object):
-        abstract = True
-
-
-class PolygonFields(models.Model):
-    """
-    Base class for a record with polygon geometry.
-    """
-    class GeometryTypes(object):
-        POLYGON = 'polygon'
-        CHOICES = ((POLYGON, 'Polygon'),)
-
-    geom = models.PolygonField(srid=settings.GROUT['SRID'])
-    location_text = models.CharField(max_length=200, null=True, blank=True)
-    geometry_type = models.CharField(max_length=7,
-                                     choices=GeometryTypes.CHOICES,
-                                     default=GeometryTypes.POLYGON)
-
-    class Meta(object):
-        abstract = True
-
-
-class NoGeometryFields(models.Model):
-    """
-    Base class for a record with no geometry.
-    """
-    class GeometryTypes(object):
-        NONE = 'none'
-        CHOICES = ((NONE, 'None'),)
-
-    geometry_type = models.CharField(max_length=7,
-                                     choices=GeometryTypes.CHOICES,
-                                     default=GeometryTypes.NONE)
-
-    class Meta(object):
-        abstract = True
-
-
-class FlexibleRecord(AbstractFlexibleRecord, NoGeometryFields):
-    """
-    Catalog data with a flexible schema.
-    """
-    class Meta(object):
-        ordering = ('-created',)
-
-
-class TemporalFlexibleRecord(AbstractFlexibleRecord, NoGeometryFields, DateTimeRange):
-    """
-    Catalog data with a flexible schema, including enforced date/time data.
-    """
-    class Meta(object):
-        ordering = ('-created',)
-
-
-class PointRecord(AbstractFlexibleRecord, PointFields):
-    """
-    Catalog a point in space.
-    """
-    class Meta(object):
-        ordering = ('-created',)
-
-
-class Record(AbstractFlexibleRecord, PointFields, DateTimeRange):
-    """
-    Catalog a point in time and space.
-
-    The name is perhaps confusing, but is here for legacy support. Should be
-    thought of as 'TemporalPointRecord' instead.
-    """
-    class Meta(object):
-        ordering = ('-created',)
-
-
-class TemporalPointRecord(Record):
-    """
-    Alias for a Record. Catalog a point in time and space.
-    """
-    class Meta(object):
-        ordering = ('-created',)
-
-
-class PolygonRecord(AbstractFlexibleRecord, PolygonFields):
-    """
-    Catalog a boundary in space.
-    """
-    class Meta(object):
-        ordering = ('-created',)
-
-
-class TemporalPolygonRecord(AbstractFlexibleRecord, PolygonFields, DateTimeRange):
-    """
-    Catalog a boundary in time and space.
-    """
     class Meta(object):
         ordering = ('-created',)
 
