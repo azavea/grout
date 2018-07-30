@@ -13,7 +13,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 
 from grout import models
 from grout.views import RecordViewSet
-from grout.filters import DateRangeFilterBackend
+from grout.exceptions import QueryParameterException, DATETIME_FORMAT_ERROR
 
 
 class DateFilterBackendTestCase(TestCase):
@@ -137,8 +137,8 @@ class DateFilterBackendTestCase(TestCase):
         force_authenticate(missing_tz_req, self.user)
         missing_tz_res = self.view(missing_tz_req).render()
 
-        msg = 'Invalid value for parameter datetimes, value must be ' + DateRangeFilterBackend.ERR_MSG
-        self.assertEqual(str(json.loads(missing_tz_res.content.decode('utf-8'))['detail']), msg)
+        self.assertEqual(str(json.loads(missing_tz_res.content.decode('utf-8'))['detail']),
+                         str(QueryParameterException('occurred_max', DATETIME_FORMAT_ERROR)))
 
     def test_range_parse_errors(self):
         """Test that parse errors get thrown when the date range is improperly formatted."""
@@ -147,13 +147,13 @@ class DateFilterBackendTestCase(TestCase):
         force_authenticate(bad_min_req, self.user)
         bad_min_res = self.view(bad_min_req).render()
 
-        msg = 'Invalid value for parameter occurred_min, value must be ' + DateRangeFilterBackend.ERR_MSG
-        self.assertEqual(str(json.loads(bad_min_res.content.decode('utf-8'))['detail']), msg)
+        self.assertEqual(str(json.loads(bad_min_res.content.decode('utf-8'))['detail']),
+                         str(QueryParameterException('occurred_min', DATETIME_FORMAT_ERROR)))
 
         # Test a bad `occurred_max` parameter.
         bad_max_req = self.factory.get('/foo/', {'occurred_max': 'foobarbaz'})
         force_authenticate(bad_max_req, self.user)
         bad_max_res = self.view(bad_max_req).render()
 
-        msg = 'Invalid value for parameter occurred_max, value must be ' + DateRangeFilterBackend.ERR_MSG
-        self.assertEqual(str(json.loads(bad_max_res.content.decode('utf-8'))['detail']), msg)
+        self.assertEqual(str(json.loads(bad_max_res.content.decode('utf-8'))['detail']),
+                         str(QueryParameterException('occurred_max', DATETIME_FORMAT_ERROR)))

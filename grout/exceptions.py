@@ -18,6 +18,7 @@ class QueryParameterException(APIException):
         def __str__(self):
             return repr(self.detail)
 
+
 GEOMETRY_TYPE_ERROR = ("Incoming Record geometry '{incoming}' does not match the " +
                        "expected geometry type '{expected}' of the RecordType {uuid}.")
 DATETIME_NOT_PERMITTED = ("This field is not permitted for Records of RecordType {uuid}. " +
@@ -26,3 +27,5 @@ DATETIME_NOT_PERMITTED = ("This field is not permitted for Records of RecordType
 DATETIME_REQUIRED = ("This field is required for all Records of RecordType {uuid}. " +
                      "Please include this field, or update the RecordType to set " +
                      "the `temporal` flag to False.")
+DATETIME_FORMAT_ERROR = ('ISO 8601 formatted with timezone information. Please check ' +
+                         'that the URL is properly encoded.')

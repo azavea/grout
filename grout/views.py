@@ -25,8 +25,7 @@ from grout.filters import (BoundaryFilter,
                            BoundaryPolygonFilter,
                            JsonBFilterBackend,
                            RecordFilter,
-                           RecordTypeFilter,
-                           DateRangeFilterBackend)
+                           RecordTypeFilter)
 
 from grout.pagination import OptionalLimitOffsetPagination
 
@@ -53,8 +52,7 @@ class RecordViewSet(viewsets.ModelViewSet):
     filter_class = RecordFilter
     bbox_filter_field = 'geom'
     jsonb_filter_field = 'data'
-    filter_backends = (InBBoxFilter, JsonBFilterBackend,
-                       DjangoFilterBackend, DateRangeFilterBackend)
+    filter_backends = (InBBoxFilter, JsonBFilterBackend, DjangoFilterBackend)
 
 
 class RecordTypeViewSet(viewsets.ModelViewSet):
