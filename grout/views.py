@@ -63,6 +63,7 @@ class RecordViewSet(viewsets.ModelViewSet):
 
     VALID_GEOTYPES = ['point', 'polygon', 'none']
     GEOTYPE_NOT_VALID = "The 'geometry_type' parameter must be one of: " + ', '.join(VALID_GEOTYPES)
+    BAD_GEOMETRY = "The posted geometry was parsed as a {input}, when it should be a {expected}."
     GEOTYPE_AND_POLYGON = ("The 'geometry_type' parameter cannot be 'none' when " +
                            "either of the 'polygon' or 'polygon_id' parameters is present.")
     INVALID_DATETIMES = "'{none}' cannot be 'none' when '{timestamp}' is a timestamp."

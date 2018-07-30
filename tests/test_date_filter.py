@@ -137,8 +137,6 @@ class DateFilterBackendTestCase(TestCase):
         force_authenticate(min_is_none_req, self.user)
         min_is_none_res = self.view(min_is_none_req).render()
 
-        import pdb
-        pdb.set_trace()
         self.assertEqual(json.loads(min_is_none_res.content.decode('utf-8'))['count'], 1)
 
         max_is_none_req = self.factory.get('/foo/', {'occurred_max': 'none'})

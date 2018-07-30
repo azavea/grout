@@ -1,14 +1,17 @@
 import os
 import json
+import datetime
 
 import django
-from django.contrib.gis.geos import Polygon, LinearRing, MultiPolygon
+from django.contrib.gis.geos import (Point, Polygon, LinearRing, MultiPolygon,
+                                    LineString)
 
 from rest_framework import status
 
 from tests.api_test_case import GroutAPITestCase
 from grout.models import (Boundary, BoundaryPolygon,
-                          RecordSchema, RecordType)
+                          RecordSchema, RecordType, Record)
+from grout.views import RecordViewSet
 
 if django.VERSION < (2, 0):
     from django.core.urlresolvers import reverse
@@ -148,6 +151,289 @@ class RecordTypeViewTestCase(GroutAPITestCase):
         response_data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response_data['current_schema'], str(new_record_schema.uuid),
                          response_data)
+
+
+class RecordViewTestCase(GroutAPITestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(RecordViewTestCase, cls).setUpClass()
+
+        # Create dummy data for a Point Recordtype.
+        cls.point_record_type = RecordType.objects.create(label='Point',
+                                                          plural_label='Points',
+                                                          geometry_type='point',
+                                                          temporal=True)
+        cls.point_schema = RecordSchema.objects.create(record_type=cls.point_record_type,
+                                                       version=1,
+                                                       schema={})
+        cls.point_record = Record.objects.create(schema=cls.point_schema,
+                                                 data={},
+                                                 occurred_from=datetime.now(),
+                                                 occurred_to=datetime.now(),
+                                                 geom=Point(0, 0))
+
+        # Create dummy data for a Polygon Recordtype.
+        cls.polygon_record_type = RecordType.objects.create(label='Polygon',
+                                                            plural_label='Polygons',
+                                                            geometry_type='polygon',
+                                                            temporal=True)
+        cls.polygon_schema = RecordSchema.objects.create(record_type=cls.polygon_record_type,
+                                                         version=1,
+                                                         schema={})
+        cls.coords = ((0, 0), (0, 1), (1, 1), (1, 0), (0, 0))
+        cls.polygon_record = Record.objects.create(schema=cls.polygon_schema,
+                                                   data={},
+                                                   occurred_from=datetime.now(),
+                                                   occurred_to=datetime.now(),
+                                                   geom=Polygon(LinearRing(cls.coords)))
+
+        # Create dummy data for a MultiPolygon Recordtype.
+        cls.multipolygon_record_type = RecordType.objects.create(label='Multipolygon',
+                                                                 plural_label='Multipolygons',
+                                                                 geometry_type='multipolygon',
+                                                                 temporal=True)
+        cls.multipolygon_schema = RecordSchema.objects.create(record_type=cls.multipolygon_record_type,
+                                                              version=1,
+                                                              schema={})
+        cls.multipolygon_record = Record.objects.create(schema=cls.multipolygon_schema,
+                                                       data={},
+                                                       occurred_from=datetime.now(),
+                                                       occurred_to=datetime.now(),
+                                                       geom=MultiPolygon(Polygon(LinearRing(cls.coords))))
+
+        # Create dummy data for a LineString Recordtype.
+        cls.linestring_record_type = RecordType.objects.create(label='Linestring',
+                                                               plural_label='Linestrings',
+                                                               geometry_type='linestring',
+                                                               temporal=True)
+        cls.linestring_schema = RecordSchema.objects.create(record_type=cls.linestring_record_type,
+                                                            version=1,
+                                                            schema={})
+        cls.linestring_record = Record.objects.create(schema=cls.linestring_schema,
+                                                      data={},
+                                                      occurred_from=datetime.now(),
+                                                      occurred_to=datetime.now(),
+                                                      geom=LineString(cls.coords))
+
+        # The base endpoint for listing records.
+        cls.record_endpt = reverse('record-list')
+
+    def test_create_polygon_record(self):
+        """
+        Test successfully creating a Record with polygon geometry.
+        """
+        points = ', '.join('POINT(%d, %d)' % (x, y) for x, y in self.coords)
+        geom = 'POLYGON(LINEARRING({points}))'.format(points=points)
+        data = {
+            'schema':self.polygon_schema.uuid,
+            'occurred_from': datetime.now(),
+            'occurred_to': datetime.now(),
+            'geom': geom,
+            'archived': False,
+        }
+
+        response = self.client.post(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+
+    def test_create_point_record(self):
+        """
+        Test successfully creating a Record with point geometry.
+        """
+        data = {
+            'schema':self.point_schema.uuid,
+            'occurred_from': datetime.now(),
+            'occurred_to': datetime.now(),
+            'geom': 'POINT(0, 0)',
+            'archived': False,
+        }
+
+        response = self.client.post(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+
+        uuid = response.data['uuid']
+        new_record = Record.objects.get(uuid=uuid)
+        self.assertEqual(new_record.geom, Point(0, 0))
+
+    def test_create_multipolygon_record(self):
+        """
+        Test successfully creating a Record with multipolygon geometry.
+        """
+        points = ', '.join('POINT(%d, %d)' % (x, y) for x, y in self.coords)
+        geom = 'MULTIPOLYGON(POLYGON(LINEARRING({points})))'.format(points=points)
+        data = {
+            'schema':self.multipolygon_schema.uuid,
+            'occurred_from': datetime.now(),
+            'occurred_to': datetime.now(),
+            'geom': geom,
+            'archived': False,
+        }
+
+        response = self.client.post(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+
+    def test_create_linestring_record(self):
+        """
+        Test successfully creating a Record with linestring geometry.
+        """
+        points = ', '.join('POINT(%d, %d)' % (x, y) for x, y in self.coords)
+        geom = 'LINESTRING({points})'.format(points=points)
+        data = {
+            'schema':self.linestring_schema.uuid,
+            'occurred_from': datetime.now(),
+            'occurred_to': datetime.now(),
+            'geom': geom,
+            'archived': False,
+        }
+
+        response = self.client.post(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+
+    def test_polygon_record_wrong_geometry_errors(self):
+        """
+        Test that uploading the wrong type of geometry to a Record in a
+        Polygon RecordType raises an error.
+        """
+        data = {
+            'schema':self.polygon_schema.uuid,
+            'occurred_from': datetime.now(),
+            'occurred_to': datetime.now(),
+            'geom': 'POINT(0, 0)',  # Use a Point instead of a Polygon.
+            'archived': False,
+        }
+
+        response = self.client.post(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        received_msg = json.loads(response.content.decode('utf-8')).get('detail')
+        expected_msg = RecordViewSet.BAD_GEOMETRY.format(input='Point',
+                                                         expected='Polygon')
+        self.assertEqual(received_msg, expected_msg, response.content)
+
+    def test_point_record_wrong_geometry_errors(self):
+        """
+        Test that uploading the wrong type of geometry to a Record in a
+        Point RecordType raises an error.
+        """
+        points = ', '.join('POINT(%d, %d)' % (x, y) for x, y in self.coords)
+        geom = 'POLYGON(LINEARRING({points}))'.format(points=points)
+        data = {
+            'schema':self.point_schema.uuid,
+            'occurred_from': datetime.now(),
+            'occurred_to': datetime.now(),
+            'geom': geom,  # Use a Polygon instead of a Point.
+            'archived': False,
+        }
+
+        response = self.client.post(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        received_msg = json.loads(response.content.decode('utf-8')).get('detail')
+        expected_msg = RecordViewSet.BAD_GEOMETRY.format(input='Polygon',
+                                                         expected='Point')
+        self.assertEqual(received_msg, expected_msg, response.content)
+
+    def test_multipolygon_record_wrong_geometry_errors(self):
+        """
+        Test that uploading the wrong type of geometry to a Record in a
+        Multipolygon RecordType raises an error.
+        """
+        data = {
+            'schema':self._schema.uuid,
+            'occurred_from': datetime.now(),
+            'occurred_to': datetime.now(),
+            'geom': 'POINT(0, 0)',  # Use a Point instead of a MultiPolygon.
+            'archived': False,
+        }
+
+        response = self.client.post(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        received_msg = json.loads(response.content.decode('utf-8')).get('detail')
+        expected_msg = RecordViewSet.BAD_GEOMETRY.format(input='Point',
+                                                         expected='MultiPolygon')
+        self.assertEqual(received_msg, expected_msg, response.content)
+
+    def test_linestring_record_wrong_geometry_errors(self):
+        """
+        Test that uploading the wrong type of geometry to a Record in a
+        Linestring RecordType raises an error.
+        """
+        data = {
+            'schema': self.linestring_schema.uuid,
+            'occurred_from': datetime.now(),
+            'occurred_to': datetime.now(),
+            'geom': 'POINT(0, 0)',  # Use a Point instead of a LineString.
+            'archived': False,
+        }
+
+        response = self.client.post(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        received_msg = json.loads(response.content.decode('utf-8')).get('detail')
+        expected_msg = RecordViewSet.BAD_GEOMETRY.format(input='Point',
+                                                         expected='LineString')
+        self.assertEqual(received_msg, expected_msg, response.content)
+
+    def test_get_polygon_record(self):
+        """
+        Get a Record with polygon geometry.
+        """
+        data = {
+            'record_type': self.polygon_record_type
+        }
+        response = self.client.get(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
+
+        response_data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response_data['count'], 1)
+        self.assertEqual(response_data['results'][0]['uuid'], self.polygon_record.uuid)
+        self.assertEqual(response_data['results'][0]['geom'], self.polygon_record.geom)
+
+    def test_get_point_record(self):
+        """
+        Get a Record with point geometry.
+        """
+        data = {
+            'record_type': self.point_record_type
+        }
+        response = self.client.get(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
+
+        response_data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response_data['count'], 1)
+        self.assertEqual(response_data['results'][0]['uuid'], self.point_record.uuid)
+        self.assertEqual(response_data['results'][0]['geom'], self.point_record.geom)
+
+    def test_get_multipolygon_record(self):
+        """
+        Get a Record with multipolygon geometry.
+        """
+        data = {
+            'record_type': self.multipolygon_record_type
+        }
+        response = self.client.get(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
+
+        response_data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response_data['count'], 1)
+        self.assertEqual(response_data['results'][0]['uuid'], self.multipolygon_record.uuid)
+        self.assertEqual(response_data['results'][0]['geom'], self.multipolygon_record.geom)
+
+    def test_get_linestring_record(self):
+        """
+        Get a Record with linestring geometry.
+        """
+        data = {
+            'record_type': self.linestring_record_type
+        }
+        response = self.client.get(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
+
+        response_data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response_data['count'], 1)
+        self.assertEqual(response_data['results'][0]['uuid'], self.linestring_record.uuid)
+        self.assertEqual(response_data['results'][0]['geom'], self.linestring_record.geom)
 
 
 class BoundaryViewTestCase(GroutAPITestCase):
