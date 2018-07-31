@@ -53,19 +53,22 @@ class DateFilterBackendTestCase(TestCase):
                                                   version=1,
                                                   schema=self.item_schema)
 
+        # Define three chronological points in time in order to test range filtering.
         self.a_date = parse('2015-01-01T00:00:00+00:00')
         self.a_later_date = parse('2015-02-22T00:00:00+00:00')
         self.an_even_later_date = parse('2018-07-30T00:00:00+00:00')
 
+        # The first Record spans the first and second points in time.
         self.early_record = models.Record.objects.create(
-            occurred_from=self.a_date,  # A DATE
+            occurred_from=self.a_date,
             occurred_to=self.a_later_date,
             geom='POINT (0 0)',
             schema=self.schema,
             data={}
         )
+        # The second Record spans the second and third points in time.
         self.later_record = models.Record.objects.create(
-            occurred_from=self.a_later_date,  # A LATER DATE
+            occurred_from=self.a_later_date,
             occurred_to=self.an_even_later_date,
             geom='POINT (0 0)',
             schema=self.schema,
@@ -93,30 +96,35 @@ class DateFilterBackendTestCase(TestCase):
 
     def test_valid_datefilter(self):
         """ Test filtering on dates """
-        req3 = self.factory.get('/foo/', {'occurred_min': self.a_date})
-        force_authenticate(req3, self.user)
-        res3 = self.view(req3).render()
-        self.assertEqual(json.loads(res3.content.decode('utf-8'))['count'], 2)
-
-        req4 = self.factory.get('/foo/', {'occurred_min': self.a_later_date})
-        force_authenticate(req4, self.user)
-        res4 = self.view(req4).render()
-        self.assertEqual(json.loads(res4.content.decode('utf-8'))['count'], 1)
-
-        req1 = self.factory.get('/foo/', {'occurred_max': self.a_date})
+        req1 = self.factory.get('/foo/', {'occurred_min': self.a_date})
         force_authenticate(req1, self.user)
         res1 = self.view(req1).render()
-        self.assertEqual(json.loads(res1.content.decode('utf-8'))['count'], 0)
+        expected_count1 = len([self.early_record, self.later_record])
+        self.assertEqual(json.loads(res1.content.decode('utf-8'))['count'], expected_count1)
 
-        req2 = self.factory.get('/foo/', {'occurred_max': self.a_later_date})
+        req2 = self.factory.get('/foo/', {'occurred_min': self.a_later_date})
         force_authenticate(req2, self.user)
         res2 = self.view(req2).render()
-        self.assertEqual(json.loads(res2.content.decode('utf-8'))['count'], 1)
+        expected_count2 = len([self.later_record])
+        self.assertEqual(json.loads(res2.content.decode('utf-8'))['count'], expected_count2)
+
+        req3 = self.factory.get('/foo/', {'occurred_max': self.a_date})
+        force_authenticate(req3, self.user)
+        res3 = self.view(req3).render()
+        expected_count3 = len([])
+        self.assertEqual(json.loads(res3.content.decode('utf-8'))['count'], expected_count3)
+
+        req4 = self.factory.get('/foo/', {'occurred_max': self.a_later_date})
+        force_authenticate(req4, self.user)
+        res4 = self.view(req4).render()
+        expected_count4 = len([self.early_record])
+        self.assertEqual(json.loads(res4.content.decode('utf-8'))['count'], expected_count4)
 
         req5 = self.factory.get('/foo/', {'occurred_min': self.a_date,
                                           'occurred_max': self.a_later_date})
         force_authenticate(req5, self.user)
         res5 = self.view(req5).render()
+        expected_count5 = len([self.early_record])
         self.assertEqual(json.loads(res5.content.decode('utf-8'))['count'], 1)
 
     def test_missing_min_max(self):

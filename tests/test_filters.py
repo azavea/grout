@@ -87,7 +87,7 @@ class RecordQueryTestCase(TestCase):
     """ Test Record queries """
 
     def setUp(self):
-        self.filter_backend = RecordFilter(queryset=Record.objects.all())
+        self.filter_backend = RecordFilter()
         self.viewset = RecordViewSet()
         self.factory = APIRequestFactory()
         self.queryset = Record.objects.all()

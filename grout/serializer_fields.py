@@ -3,7 +3,6 @@ from django.core.exceptions import ValidationError
 from django.contrib.gis.geos import GEOSGeometry
 
 from rest_framework.fields import Field
-from rest_framework_gis.fields import GeometryField
 
 from grout.validators import validate_json_schema
 
@@ -95,8 +94,3 @@ class GeomBBoxField(Field):
             raise ValidationError(msg.format(cls=value.__class__.__name__))
         xmin, ymin, xmax, ymax = value.extent
         return ({"lon": xmin, "lat": ymin}, {"lon": xmax, "lat": ymax})
-
-class RecordGeometryField(GeometryField):
-    """
-    Extend DRF GIS' built-in GeometryField for serializing geometries.
-    """

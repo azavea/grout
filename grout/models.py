@@ -131,7 +131,6 @@ class Record(GroutModel):
             geom_error = GEOMETRY_TYPE_ERROR.format(incoming=incoming_geotype,
                                                     expected=expected_geotype,
                                                     uuid=record_type_id)
-
             errors['geom'] = geom_error
 
         # Make sure that incoming datetime information matches the `temporal`
