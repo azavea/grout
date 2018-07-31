@@ -153,14 +153,15 @@ class RecordTypeViewTestCase(GroutAPITestCase):
         self.assertEqual(response_data['current_schema'], str(new_record_schema.uuid),
                          response_data)
 
-
-class RecordViewTestCase(GroutAPITestCase):
-
+class PointRecordViewTestCase(GroutAPITestCase):
+    """
+    Test basic API views involving temporal Records with point geometries.
+    """
     @classmethod
     def setUpClass(cls):
-        super(RecordViewTestCase, cls).setUpClass()
+        super(PointRecordViewTestCase, cls).setUpClass()
 
-        # Create dummy data for a Point Recordtype.
+        # Create dummy data for a Point RecordType.
         cls.point_record_type = RecordType.objects.create(label='Point',
                                                           plural_label='Points',
                                                           geometry_type='point',
@@ -173,107 +174,15 @@ class RecordViewTestCase(GroutAPITestCase):
                                                  occurred_from=timezone.now(),
                                                  occurred_to=timezone.now(),
                                                  geom=Point(0, 0))
-
-        # Create dummy data for a Polygon Recordtype.
-        cls.polygon_record_type = RecordType.objects.create(label='Polygon',
-                                                            plural_label='Polygons',
-                                                            geometry_type='polygon',
-                                                            temporal=True)
-        cls.polygon_schema = RecordSchema.objects.create(record_type=cls.polygon_record_type,
-                                                         version=1,
-                                                         schema={})
-        cls.coords = ((0, 0), (0, 1), (1, 1), (1, 0), (0, 0))
-        cls.polygon_record = Record.objects.create(schema=cls.polygon_schema,
-                                                   data='{}',
-                                                   occurred_from=timezone.now(),
-                                                   occurred_to=timezone.now(),
-                                                   geom=Polygon(LinearRing(cls.coords)))
-
-        # Create dummy data for a MultiPolygon Recordtype.
-        cls.multipolygon_record_type = RecordType.objects.create(label='Multipolygon',
-                                                                 plural_label='Multipolygons',
-                                                                 geometry_type='multipolygon',
-                                                                 temporal=True)
-        cls.multipolygon_schema = RecordSchema.objects.create(record_type=cls.multipolygon_record_type,
-                                                              version=1,
-                                                              schema={})
-        cls.multipolygon_record = Record.objects.create(schema=cls.multipolygon_schema,
-                                                        data='{}',
-                                                        occurred_from=timezone.now(),
-                                                        occurred_to=timezone.now(),
-                                                        geom=MultiPolygon(Polygon(LinearRing(cls.coords))))
-
-        # Create dummy data for a LineString Recordtype.
-        cls.linestring_record_type = RecordType.objects.create(label='Linestring',
-                                                               plural_label='Linestrings',
-                                                               geometry_type='linestring',
-                                                               temporal=True)
-        cls.linestring_schema = RecordSchema.objects.create(record_type=cls.linestring_record_type,
-                                                            version=1,
-                                                            schema={})
-        cls.linestring_record = Record.objects.create(schema=cls.linestring_schema,
-                                                      data='{}',
-                                                      occurred_from=timezone.now(),
-                                                      occurred_to=timezone.now(),
-                                                      geom=LineString(cls.coords))
-
-        # Create dummy data for a RecordType with no geometry.
-        cls.nongeospatial_record_type = RecordType.objects.create(label='Nongeospatial',
-                                                                  plural_label='Nongeospatials',
-                                                                  geometry_type='none',
-                                                                  temporal=True)
-        cls.nongeospatial_schema = RecordSchema.objects.create(record_type=cls.nongeospatial_record_type,
-                                                               version=1,
-                                                               schema={})
-        cls.nongeospatial_record = Record.objects.create(schema=cls.nongeospatial_schema,
-                                                         data='{}',
-                                                         occurred_from=timezone.now(),
-                                                         occurred_to=timezone.now())
-
-        # Create dummy data for a RecordType with no datetime information.
-        cls.nontemporal_record_type = RecordType.objects.create(label='Nontemporal',
-                                                                plural_label='Nontemporals',
-                                                                geometry_type='point',
-                                                                temporal=False)
-        cls.nontemporal_schema = RecordSchema.objects.create(record_type=cls.nontemporal_record_type,
-                                                             version=1,
-                                                             schema={})
-        cls.nontemporal_record = Record.objects.create(schema=cls.nontemporal_schema,
-                                                       data='{}',
-                                                       geom=Point(0, 0))
-
         # The base endpoint for listing records.
         cls.record_endpt = reverse('record-list')
-
-    def test_create_polygon_record(self):
-        """
-        Test successfully creating a Record with polygon geometry.
-        """
-        points = ', '.join('%d %d' % (x, y) for x, y in self.coords)
-        geom = 'POLYGON(({points}))'.format(points=points)
-        data = {
-            'schema':self.polygon_schema.uuid,
-            'occurred_from': timezone.now(),
-            'occurred_to': timezone.now(),
-            'geom': geom,
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
-
-        uuid = response.data['uuid']
-        new_record = Record.objects.get(uuid=uuid)
-        expected_coords = Polygon(LinearRing(self.coords)).coords
-        self.assertEqual(new_record.geom.coords, expected_coords)
 
     def test_create_point_record(self):
         """
         Test successfully creating a Record with point geometry.
         """
         data = {
-            'schema':self.point_schema.uuid,
+            'schema': self.point_schema.uuid,
             'occurred_from': timezone.now(),
             'occurred_to': timezone.now(),
             'geom': 'POINT(0 0)',
@@ -288,116 +197,16 @@ class RecordViewTestCase(GroutAPITestCase):
         new_record = Record.objects.get(uuid=uuid)
         self.assertEqual(new_record.geom.coords, Point(0, 0).coords)
 
-    def test_create_multipolygon_record(self):
-        """
-        Test successfully creating a Record with multipolygon geometry.
-        """
-        points = ', '.join('%d %d' % (x, y) for x, y in self.coords)
-        geom = 'MULTIPOLYGON((({points})))'.format(points=points)
-        data = {
-            'schema':self.multipolygon_schema.uuid,
-            'occurred_from': timezone.now(),
-            'occurred_to': timezone.now(),
-            'geom': geom,
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
-
-        uuid = response.data['uuid']
-        new_record = Record.objects.get(uuid=uuid)
-        expected_coords = MultiPolygon(Polygon(LinearRing(self.coords))).coords
-        self.assertEqual(new_record.geom.coords, expected_coords)
-
-    def test_create_linestring_record(self):
-        """
-        Test successfully creating a Record with linestring geometry.
-        """
-        points = ', '.join('%d %d' % (x, y) for x, y in self.coords)
-        geom = 'LINESTRING({points})'.format(points=points)
-        data = {
-            'schema':self.linestring_schema.uuid,
-            'occurred_from': timezone.now(),
-            'occurred_to': timezone.now(),
-            'geom': geom,
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
-
-        uuid = response.data['uuid']
-        new_record = Record.objects.get(uuid=uuid)
-        expected_coords = LineString(self.coords).coords
-        self.assertEqual(new_record.geom.coords, expected_coords)
-
-    def test_create_nongeospatial_record(self):
-        """
-        Test successfully creating a Record with no geometry.
-        """
-        data = {
-            'schema':self.nongeospatial_schema.uuid,
-            'occurred_from': timezone.now(),
-            'occurred_to': timezone.now(),
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
-        self.assertIsNone(response.data.get('geom'))
-
-    def test_create_nontemporal_record(self):
-        """
-        Test successfully creating a Record with no datetime information.
-        """
-        data = {
-            'schema':self.nontemporal_schema.uuid,
-            'geom': 'POINT(0 0)',
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
-        self.assertIsNone(response.data.get('occurred_from'), response.data)
-        self.assertIsNone(response.data.get('occurred_to'), response.data)
-
-    def test_polygon_record_wrong_geometry_errors(self):
-        """
-        Test that uploading the wrong type of geometry to a Record in a
-        Polygon RecordType raises an error.
-        """
-        data = {
-            'schema':self.polygon_schema.uuid,
-            'occurred_from': timezone.now(),
-            'occurred_to': timezone.now(),
-            'geom': 'POINT(0 0)',  # Use a Point instead of a Polygon.
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
-
-        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
-        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Point',
-                                                  expected='Polygon',
-                                                  uuid=self.polygon_record_type.uuid)
-        self.assertEqual(received_msg, expected_msg, response.content)
-
     def test_point_record_wrong_geometry_errors(self):
         """
         Test that uploading the wrong type of geometry to a Record in a
         Point RecordType raises an error.
         """
-        points = ', '.join('%d %d' % (x, y) for x, y in self.coords)
+        coords = ((0, 0), (0, 1), (1, 1), (1, 0), (0, 0))
+        points = ', '.join('%d %d' % (x, y) for x, y in coords)
         geom = 'POLYGON(({points}))'.format(points=points)
         data = {
-            'schema':self.point_schema.uuid,
+            'schema': self.point_schema.uuid,
             'occurred_from': timezone.now(),
             'occurred_to': timezone.now(),
             'geom': geom,  # Use a Polygon instead of a Point.
@@ -413,148 +222,6 @@ class RecordViewTestCase(GroutAPITestCase):
                                                   expected='Point',
                                                   uuid=self.point_record_type.uuid)
         self.assertEqual(received_msg, expected_msg, response.content)
-
-    def test_multipolygon_record_wrong_geometry_errors(self):
-        """
-        Test that uploading the wrong type of geometry to a Record in a
-        Multipolygon RecordType raises an error.
-        """
-        data = {
-            'schema':self.multipolygon_schema.uuid,
-            'occurred_from': timezone.now(),
-            'occurred_to': timezone.now(),
-            'geom': 'POINT(0 0)',  # Use a Point instead of a MultiPolygon.
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
-
-        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
-        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Point',
-                                                  expected='MultiPolygon',
-                                                  uuid=self.multipolygon_record_type.uuid)
-        self.assertEqual(received_msg, expected_msg, response.content)
-
-    def test_linestring_record_wrong_geometry_errors(self):
-        """
-        Test that uploading the wrong type of geometry to a Record in a
-        Linestring RecordType raises an error.
-        """
-        data = {
-            'schema': self.linestring_schema.uuid,
-            'occurred_from': timezone.now(),
-            'occurred_to': timezone.now(),
-            'geom': 'POINT(0 0)',  # Use a Point instead of a LineString.
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
-
-        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
-        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Point',
-                                                  expected='LineString',
-                                                  uuid=self.linestring_record_type.uuid)
-        self.assertEqual(received_msg, expected_msg, response.content)
-
-    def test_nongeospatial_record_wrong_geometry_errors(self):
-        """
-        Test that uploading a geometry to a Record with a nongeospatial RecordType
-        raises an error.
-        """
-        data = {
-            'schema': self.nongeospatial_schema.uuid,
-            'occurred_from': timezone.now(),
-            'occurred_to': timezone.now(),
-            'geom': 'POINT(0 0)',
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
-
-        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
-        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Point',
-                                                  expected='None',
-                                                  uuid=self.nongeospatial_record_type.uuid)
-        self.assertEqual(received_msg, expected_msg, response.content)
-
-    def test_nontemporal_record_with_datetime_info_errors(self):
-        """
-        Test that uploading datetime information to a nontemporal Record
-        raises an error.
-        """
-        data = {
-            'schema': self.nontemporal_schema.uuid,
-            'occurred_from': timezone.now(),
-            'occurred_to': timezone.now(),
-            'geom': 'POINT(0 0)',
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
-
-        min_msg = json.loads(response.content.decode('utf-8')).get('occurred_from')
-        max_msg = json.loads(response.content.decode('utf-8')).get('occurred_to')
-        expected_msg = DATETIME_NOT_PERMITTED.format(uuid=self.nontemporal_record_type.uuid)
-
-        self.assertEqual(min_msg, expected_msg, response.content)
-        self.assertEqual(max_msg, expected_msg, response.content)
-
-    def test_temporal_record_with_no_datetime_info_errors(self):
-        """
-        Test that leaving out datetime information for a temporal Record
-        raises an error.
-        """
-        data = {
-            'schema': self.point_schema.uuid,
-            'geom': 'POINT(0 0)',
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
-
-        min_msg = json.loads(response.content.decode('utf-8')).get('occurred_from')
-        max_msg = json.loads(response.content.decode('utf-8')).get('occurred_to')
-        expected_msg = DATETIME_REQUIRED.format(uuid=self.point_record_type.uuid)
-
-        self.assertEqual(min_msg, expected_msg, response.content)
-        self.assertEqual(max_msg, expected_msg, response.content)
-
-    def test_get_polygon_record(self):
-        """
-        Get a Record with polygon geometry.
-        """
-        data = {
-            'record_type': self.polygon_record_type.uuid
-        }
-        response = self.client.get(self.record_endpt, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
-
-        response_data = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response_data['count'], 1)
-
-        response_entity = response_data['results'][0]
-        self.assertEqual(response_entity['uuid'],
-                         str(self.polygon_record.uuid),
-                         response_entity)
-
-        response_geotype = response_entity['geom']['type']
-        self.assertEqual(response_geotype, 'Polygon', response_entity)
-
-        response_coordinates = response_entity['geom']['coordinates']
-        # Format the tuples in the expected coordinates as lists to match the response,
-        # which comes in as JSON.
-        expected_coordinates = json.loads(json.dumps(self.polygon_record.geom.coords))
-        self.assertEqual(response_coordinates, expected_coordinates, response_entity)
 
     def test_get_point_record(self):
         """
@@ -583,6 +250,200 @@ class RecordViewTestCase(GroutAPITestCase):
         expected_coordinates = json.loads(json.dumps(self.point_record.geom.coords))
         self.assertEqual(response_coordinates, expected_coordinates, response_entity)
 
+    def test_temporal_record_with_no_datetime_info_errors(self):
+        """
+        Test that leaving out datetime information for a temporal Record
+        raises an error.
+        """
+        data = {
+            'schema': self.point_schema.uuid,
+            'geom': 'POINT(0 0)',
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        min_msg = json.loads(response.content.decode('utf-8')).get('occurred_from')
+        max_msg = json.loads(response.content.decode('utf-8')).get('occurred_to')
+        expected_msg = DATETIME_REQUIRED.format(uuid=self.point_record_type.uuid)
+
+        self.assertEqual(min_msg, expected_msg, response.content)
+        self.assertEqual(max_msg, expected_msg, response.content)
+
+
+class PolygonRecordViewTestCase(GroutAPITestCase):
+    """
+    Test basic API views involving temporal Records with polygon geometries.
+    """
+    @classmethod
+    def setUpClass(cls):
+        super(PolygonRecordViewTestCase, cls).setUpClass()
+
+        # Create dummy data for a Polygon RecordType.
+        cls.coords = ((0, 0), (0, 1), (1, 1), (1, 0), (0, 0))
+        cls.polygon_record_type = RecordType.objects.create(label='Polygon',
+                                                            plural_label='Polygons',
+                                                            geometry_type='polygon',
+                                                            temporal=True)
+        cls.polygon_schema = RecordSchema.objects.create(record_type=cls.polygon_record_type,
+                                                         version=1,
+                                                         schema={})
+        cls.polygon_record = Record.objects.create(schema=cls.polygon_schema,
+                                                   data='{}',
+                                                   occurred_from=timezone.now(),
+                                                   occurred_to=timezone.now(),
+                                                   geom=Polygon(LinearRing(cls.coords)))
+        # The base endpoint for listing records.
+        cls.record_endpt = reverse('record-list')
+
+    def test_create_polygon_record(self):
+        """
+        Test successfully creating a Record with polygon geometry.
+        """
+        points = ', '.join('%d %d' % (x, y) for x, y in self.coords)
+        geom = 'POLYGON(({points}))'.format(points=points)
+        data = {
+            'schema': self.polygon_schema.uuid,
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
+            'geom': geom,
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+
+        uuid = response.data['uuid']
+        new_record = Record.objects.get(uuid=uuid)
+        expected_coords = Polygon(LinearRing(self.coords)).coords
+        self.assertEqual(new_record.geom.coords, expected_coords)
+
+    def test_polygon_record_wrong_geometry_errors(self):
+        """
+        Test that uploading the wrong type of geometry to a Record in a
+        Polygon RecordType raises an error.
+        """
+        data = {
+            'schema': self.polygon_schema.uuid,
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
+            'geom': 'POINT(0 0)',  # Use a Point instead of a Polygon.
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
+        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Point',
+                                                  expected='Polygon',
+                                                  uuid=self.polygon_record_type.uuid)
+        self.assertEqual(received_msg, expected_msg, response.content)
+
+    def test_get_polygon_record(self):
+        """
+        Get a Record with polygon geometry.
+        """
+        data = {
+            'record_type': self.polygon_record_type.uuid
+        }
+        response = self.client.get(self.record_endpt, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
+
+        response_data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response_data['count'], 1)
+
+        response_entity = response_data['results'][0]
+        self.assertEqual(response_entity['uuid'],
+                         str(self.polygon_record.uuid),
+                         response_entity)
+
+        response_geotype = response_entity['geom']['type']
+        self.assertEqual(response_geotype, 'Polygon', response_entity)
+
+        response_coordinates = response_entity['geom']['coordinates']
+        # Format the tuples in the expected coordinates as lists to match the response,
+        # which comes in as JSON.
+        expected_coordinates = json.loads(json.dumps(self.polygon_record.geom.coords))
+        self.assertEqual(response_coordinates, expected_coordinates, response_entity)
+
+
+class MultiPolygonRecordViewTestCase(GroutAPITestCase):
+    """
+    Test basic API views involving temporal Records with MultiPolygon geometries.
+    """
+    @classmethod
+    def setUpClass(cls):
+        super(MultiPolygonRecordViewTestCase, cls).setUpClass()
+
+        # Create dummy data for a MultiPolygon Recordtype.
+        cls.coords = ((0, 0), (0, 1), (1, 1), (1, 0), (0, 0))
+        cls.multipolygon_record_type = RecordType.objects.create(label='Multipolygon',
+                                                                 plural_label='Multipolygons',
+                                                                 geometry_type='multipolygon',
+                                                                 temporal=True)
+        cls.multipolygon_schema = RecordSchema.objects.create(record_type=cls.multipolygon_record_type,
+                                                              version=1,
+                                                              schema={})
+        cls.multipolygon_record = Record.objects.create(schema=cls.multipolygon_schema,
+                                                        data='{}',
+                                                        occurred_from=timezone.now(),
+                                                        occurred_to=timezone.now(),
+                                                        geom=MultiPolygon(Polygon(LinearRing(cls.coords))))
+
+        # The base endpoint for listing records.
+        cls.record_endpt = reverse('record-list')
+
+    def test_create_multipolygon_record(self):
+        """
+        Test successfully creating a Record with multipolygon geometry.
+        """
+        points = ', '.join('%d %d' % (x, y) for x, y in self.coords)
+        geom = 'MULTIPOLYGON((({points})))'.format(points=points)
+        data = {
+            'schema': self.multipolygon_schema.uuid,
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
+            'geom': geom,
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+
+        uuid = response.data['uuid']
+        new_record = Record.objects.get(uuid=uuid)
+        expected_coords = MultiPolygon(Polygon(LinearRing(self.coords))).coords
+        self.assertEqual(new_record.geom.coords, expected_coords)
+
+    def test_multipolygon_record_wrong_geometry_errors(self):
+        """
+        Test that uploading the wrong type of geometry to a Record in a
+        Multipolygon RecordType raises an error.
+        """
+        data = {
+            'schema': self.multipolygon_schema.uuid,
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
+            'geom': 'POINT(0 0)',  # Use a Point instead of a MultiPolygon.
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
+        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Point',
+                                                  expected='MultiPolygon',
+                                                  uuid=self.multipolygon_record_type.uuid)
+        self.assertEqual(received_msg, expected_msg, response.content)
+
     def test_get_multipolygon_record(self):
         """
         Get a Record with multipolygon geometry.
@@ -610,6 +471,78 @@ class RecordViewTestCase(GroutAPITestCase):
         expected_coordinates = json.loads(json.dumps(self.multipolygon_record.geom.coords))
         self.assertEqual(response_coordinates, expected_coordinates, response_entity)
 
+
+class LineStringRecordViewTestCase(GroutAPITestCase):
+    """
+    Test basic API views involving temporal Records with LineString geometries.
+    """
+    @classmethod
+    def setUpClass(cls):
+        super(LineStringRecordViewTestCase, cls).setUpClass()
+
+        # Create dummy data for a LineString Recordtype.
+        cls.coords = ((0, 0), (0, 1), (1, 1), (1, 0), (0, 0))
+        cls.linestring_record_type = RecordType.objects.create(label='Linestring',
+                                                               plural_label='Linestrings',
+                                                               geometry_type='linestring',
+                                                               temporal=True)
+        cls.linestring_schema = RecordSchema.objects.create(record_type=cls.linestring_record_type,
+                                                            version=1,
+                                                            schema={})
+        cls.linestring_record = Record.objects.create(schema=cls.linestring_schema,
+                                                      data='{}',
+                                                      occurred_from=timezone.now(),
+                                                      occurred_to=timezone.now(),
+                                                      geom=LineString(cls.coords))
+        # The base endpoint for listing records.
+        cls.record_endpt = reverse('record-list')
+
+    def test_create_linestring_record(self):
+        """
+        Test successfully creating a Record with linestring geometry.
+        """
+        points = ', '.join('%d %d' % (x, y) for x, y in self.coords)
+        geom = 'LINESTRING({points})'.format(points=points)
+        data = {
+            'schema': self.linestring_schema.uuid,
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
+            'geom': geom,
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+
+        uuid = response.data['uuid']
+        new_record = Record.objects.get(uuid=uuid)
+        expected_coords = LineString(self.coords).coords
+        self.assertEqual(new_record.geom.coords, expected_coords)
+
+    def test_linestring_record_wrong_geometry_errors(self):
+        """
+        Test that uploading the wrong type of geometry to a Record in a
+        Linestring RecordType raises an error.
+        """
+        data = {
+            'schema': self.linestring_schema.uuid,
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
+            'geom': 'POINT(0 0)',  # Use a Point instead of a LineString.
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
+        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Point',
+                                                  expected='LineString',
+                                                  uuid=self.linestring_record_type.uuid)
+        self.assertEqual(received_msg, expected_msg, response.content)
+
     def test_get_linestring_record(self):
         """
         Get a Record with linestring geometry.
@@ -634,6 +567,132 @@ class RecordViewTestCase(GroutAPITestCase):
         # which comes in as JSON.
         expected_coordinates = json.loads(json.dumps(self.linestring_record.geom.coords))
         self.assertEqual(response_coordinates, expected_coordinates, response_entity)
+
+
+class NonGeospatialRecordViewTestCase(GroutAPITestCase):
+    """
+    Test basic API views involving temporal Records with no geometries.
+    """
+    @classmethod
+    def setUpClass(cls):
+        super(NonGeospatialRecordViewTestCase, cls).setUpClass()
+
+        # Create dummy data for a RecordType with no geometry.
+        cls.nongeospatial_record_type = RecordType.objects.create(label='Nongeospatial',
+                                                                  plural_label='Nongeospatials',
+                                                                  geometry_type='none',
+                                                                  temporal=True)
+        cls.nongeospatial_schema = RecordSchema.objects.create(record_type=cls.nongeospatial_record_type,
+                                                               version=1,
+                                                               schema={})
+        cls.nongeospatial_record = Record.objects.create(schema=cls.nongeospatial_schema,
+                                                         data='{}',
+                                                         occurred_from=timezone.now(),
+                                                         occurred_to=timezone.now())
+        # The base endpoint for listing records.
+        cls.record_endpt = reverse('record-list')
+
+    def test_create_nongeospatial_record(self):
+        """
+        Test successfully creating a Record with no geometry.
+        """
+        data = {
+            'schema': self.nongeospatial_schema.uuid,
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+        self.assertIsNone(response.data.get('geom'))
+
+    def test_nongeospatial_record_wrong_geometry_errors(self):
+        """
+        Test that uploading a geometry to a Record with a nongeospatial RecordType
+        raises an error.
+        """
+        data = {
+            'schema': self.nongeospatial_schema.uuid,
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
+            'geom': 'POINT(0 0)',
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        received_msg = json.loads(response.content.decode('utf-8')).get('geom')
+        expected_msg = GEOMETRY_TYPE_ERROR.format(incoming='Point',
+                                                  expected='None',
+                                                  uuid=self.nongeospatial_record_type.uuid)
+        self.assertEqual(received_msg, expected_msg, response.content)
+
+
+class NonTemporalRecordViewTestCase(GroutAPITestCase):
+    """
+    Test basic API views involving Records with no datetime component.
+    """
+    @classmethod
+    def setUpClass(cls):
+        super(NonTemporalRecordViewTestCase, cls).setUpClass()
+
+        # Create dummy data for a RecordType with no datetime information.
+        cls.nontemporal_record_type = RecordType.objects.create(label='Nontemporal',
+                                                                plural_label='Nontemporals',
+                                                                geometry_type='point',
+                                                                temporal=False)
+        cls.nontemporal_schema = RecordSchema.objects.create(record_type=cls.nontemporal_record_type,
+                                                             version=1,
+                                                             schema={})
+        cls.nontemporal_record = Record.objects.create(schema=cls.nontemporal_schema,
+                                                       data='{}',
+                                                       geom=Point(0, 0))
+        # The base endpoint for listing records.
+        cls.record_endpt = reverse('record-list')
+
+    def test_create_nontemporal_record(self):
+        """
+        Test successfully creating a Record with no datetime information.
+        """
+        data = {
+            'schema': self.nontemporal_schema.uuid,
+            'geom': 'POINT(0 0)',
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
+        self.assertIsNone(response.data.get('occurred_from'), response.data)
+        self.assertIsNone(response.data.get('occurred_to'), response.data)
+
+    def test_nontemporal_record_with_datetime_info_errors(self):
+        """
+        Test that uploading datetime information to a nontemporal Record
+        raises an error.
+        """
+        data = {
+            'schema': self.nontemporal_schema.uuid,
+            'occurred_from': timezone.now(),
+            'occurred_to': timezone.now(),
+            'geom': 'POINT(0 0)',
+            'archived': False,
+            'data': {},
+        }
+
+        response = self.client.post(self.record_endpt, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
+
+        min_msg = json.loads(response.content.decode('utf-8')).get('occurred_from')
+        max_msg = json.loads(response.content.decode('utf-8')).get('occurred_to')
+        expected_msg = DATETIME_NOT_PERMITTED.format(uuid=self.nontemporal_record_type.uuid)
+
+        self.assertEqual(min_msg, expected_msg, response.content)
+        self.assertEqual(max_msg, expected_msg, response.content)
 
 
 class BoundaryViewTestCase(GroutAPITestCase):

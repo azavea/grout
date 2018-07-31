@@ -137,8 +137,6 @@ class Record(GroutModel):
         # Make sure that incoming datetime information matches the `temporal`
         # flag on the RecordType for this Record.
         datetime_required = self.schema.record_type.temporal
-        has_both_datetimes = (self.occurred_from is not None and self.occurred_to is not None)
-        has_any_datetimes = (self.occurred_from is not None or self.occurred_to is not None)
 
         if datetime_required:
             if self.occurred_from is None:
@@ -164,7 +162,7 @@ class Record(GroutModel):
         """
         Extend the model's save method to run custom field validators.
         """
-        self.full_clean()
+        self.clean()
         return super(Record, self).save(*args, **kwargs)
 
 
