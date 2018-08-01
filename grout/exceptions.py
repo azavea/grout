@@ -29,3 +29,5 @@ DATETIME_REQUIRED = ("This field is required for all Records of RecordType {uuid
                      "the `temporal` flag to False.")
 DATETIME_FORMAT_ERROR = ('ISO 8601 formatted with timezone information. Please check ' +
                          'that the URL is properly encoded.')
+MIN_DATE_RANGE_ERROR = "Value must be the same or earlier than 'occurred_max'."
+MAX_DATE_RANGE_ERROR = "Value must be the same or later than 'occurred_min'."

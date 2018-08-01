@@ -10,10 +10,12 @@ from django.http import HttpRequest
 
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-
 from grout import models
 from grout.views import RecordViewSet
-from grout.exceptions import QueryParameterException, DATETIME_FORMAT_ERROR
+from grout.exceptions import (QueryParameterException,
+                              DATETIME_FORMAT_ERROR,
+                              MIN_DATE_RANGE_ERROR,
+                              MAX_DATE_RANGE_ERROR)
 
 
 class DateFilterBackendTestCase(TestCase):
@@ -154,7 +156,7 @@ class DateFilterBackendTestCase(TestCase):
             expected_count = len(test['matches'])
             force_authenticate(req, self.user)
             res = self.view(req).render()
-            self.assertEqual(json.loads(res.content.decode('utf-8'))['count'],
+            self.assertEqual(json.loads(res.content.decode('utf-8')).get('count'),
                              expected_count,
                              test)
 
@@ -176,6 +178,8 @@ class DateFilterBackendTestCase(TestCase):
         force_authenticate(missing_tz_req, self.user)
         missing_tz_res = self.view(missing_tz_req).render()
 
+        # Both values have to be strings in order for the exception to fit
+        # the equality test.
         self.assertEqual(str(json.loads(missing_tz_res.content.decode('utf-8'))['detail']),
                          str(QueryParameterException('occurred_max', DATETIME_FORMAT_ERROR)))
 
@@ -196,3 +200,22 @@ class DateFilterBackendTestCase(TestCase):
 
         self.assertEqual(str(json.loads(bad_max_res.content.decode('utf-8'))['detail']),
                          str(QueryParameterException('occurred_max', DATETIME_FORMAT_ERROR)))
+
+    def test_invalid_range(self):
+        """
+        Test that min > max raises an error when both ends of the date range
+        filter are provided.
+        """
+        min_gt_max = {
+            'occurred_min': self.max_date,
+            'occurred_max': self.min_date
+        }
+        min_gt_max_req = self.factory.get('/foo/', min_gt_max)
+        force_authenticate(min_gt_max_req, self.user)
+        min_gt_max_res = self.view(min_gt_max_req).render()
+        self.assertEqual(str(json.loads(min_gt_max_res.content.decode('utf-8')).get('occurred_min')),
+                         MIN_DATE_RANGE_ERROR,
+                         min_gt_max_res.content)
+        self.assertEqual(str(json.loads(min_gt_max_res.content.decode('utf-8')).get('occurred_max')),
+                         MAX_DATE_RANGE_ERROR,
+                         min_gt_max_res.content)
