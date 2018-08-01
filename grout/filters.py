@@ -95,8 +95,11 @@ class RecordFilter(GeoFilterSet):
         if not min_date.tzinfo:
             raise QueryParameterException('occurred_min', DATETIME_FORMAT_ERROR)
         else:
-            return queryset.filter(occurred_from__gte=min_date)\
-                           .filter(occurred_to__gte=min_date)
+            # In order to accommodate ranges, we only want to remove records where the
+            # top of the range is <= the minimum date. For a detailed explanation
+            # of why this works, see:
+            # https://github.com/azavea/grout/pull/9#discussion_r206903954
+            return queryset.filter(occurred_to__gte=min_date)
 
     def filter_occurred_max(self, queryset, field_name, value):
         """Add an upper bound for datetime ranges."""
@@ -113,8 +116,11 @@ class RecordFilter(GeoFilterSet):
         if not max_date.tzinfo:
             raise QueryParameterException('occurred_max', DATETIME_FORMAT_ERROR)
         else:
-            return queryset.filter(occurred_from__lte=max_date)\
-                           .filter(occurred_to__lte=max_date)
+            # In order to accommodate ranges, we only want to remove records where the
+            # bottom of the range is >= the maximum date. For a detailed explanation
+            # of why this works, see:
+            # https://github.com/azavea/grout/pull/9#discussion_r206903954
+            return queryset.filter(occurred_from__lte=max_date)
 
     class Meta:
         model = Record

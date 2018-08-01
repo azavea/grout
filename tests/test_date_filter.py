@@ -53,23 +53,25 @@ class DateFilterBackendTestCase(TestCase):
                                                   version=1,
                                                   schema=self.item_schema)
 
-        # Define three chronological points in time in order to test range filtering.
-        self.a_date = parse('2015-01-01T00:00:00+00:00')
-        self.a_later_date = parse('2015-02-22T00:00:00+00:00')
-        self.an_even_later_date = parse('2018-07-30T00:00:00+00:00')
+        # Define five chronological points in time in order to test range filtering.
+        self.min_date = parse('2015-01-01T00:00:00+00:00')
+        self.lower_quartile_date = parse('2015-01-15T00:00:00+00:00')
+        self.mid_date = parse('2015-02-22T00:00:00+00:00')
+        self.upper_quartile_date = parse('2018-07-30T00:00:00+00:00')
+        self.max_date = parse('2018-08-01T00:00:00+00:00')
 
         # The first Record spans the first and second points in time.
-        self.early_record = models.Record.objects.create(
-            occurred_from=self.a_date,
-            occurred_to=self.a_later_date,
+        self.min_to_mid_date_record = models.Record.objects.create(
+            occurred_from=self.min_date,
+            occurred_to=self.mid_date,
             geom='POINT (0 0)',
             schema=self.schema,
             data={}
         )
         # The second Record spans the second and third points in time.
-        self.later_record = models.Record.objects.create(
-            occurred_from=self.a_later_date,
-            occurred_to=self.an_even_later_date,
+        self.mid_to_max_date_record = models.Record.objects.create(
+            occurred_from=self.mid_date,
+            occurred_to=self.max_date,
             geom='POINT (0 0)',
             schema=self.schema,
             data={}
@@ -96,36 +98,65 @@ class DateFilterBackendTestCase(TestCase):
 
     def test_valid_datefilter(self):
         """ Test filtering on dates """
-        req1 = self.factory.get('/foo/', {'occurred_min': self.a_date})
-        force_authenticate(req1, self.user)
-        res1 = self.view(req1).render()
-        expected_count1 = len([self.early_record, self.later_record])
-        self.assertEqual(json.loads(res1.content.decode('utf-8'))['count'], expected_count1)
+        # Define a set of filters along with the records that they should match.
+        tests = [
+            {
+                'filters': {'occurred_min': 'min_date'},
+                'matches': ['min_to_mid_date_record', 'mid_to_max_date_record']
+            },
+            {
+                'filters': {'occurred_min': 'upper_quartile_date'},
+                'matches': ['mid_to_max_date_record']
+            },
+            {
+                'filters': {'occurred_max': 'min_date'},
+                'matches': ['min_to_mid_date_record']
+            },
+            {
+                'filters': {'occurred_max': 'mid_date'},
+                'matches': ['min_to_mid_date_record', 'mid_to_max_date_record']
+            },
+            {
+                'filters': {
+                    'occurred_min': 'min_date',
+                    'occurred_max': 'lower_quartile_date'
+                },
+                'matches': ['min_to_mid_date_record']
+            },
+            {
+                'filters': {
+                    'occurred_min': 'upper_quartile_date',
+                    'occurred_max': 'max_date'
+                },
+                'matches': ['mid_to_max_date_record']
+            },
+            {
+                'filters': {
+                    'occurred_min': 'lower_quartile_date',
+                    'occurred_max': 'upper_quartile_date'
+                },
+                'matches': ['min_to_mid_date_record', 'mid_to_max_date_record']
+            },
+            {
+                'filters': {
+                    'occurred_min': 'min_date',
+                    'occurred_max': 'max_date'
+                },
+                'matches': ['min_to_mid_date_record', 'mid_to_max_date_record']
+            },
+        ]
 
-        req2 = self.factory.get('/foo/', {'occurred_min': self.a_later_date})
-        force_authenticate(req2, self.user)
-        res2 = self.view(req2).render()
-        expected_count2 = len([self.later_record])
-        self.assertEqual(json.loads(res2.content.decode('utf-8'))['count'], expected_count2)
-
-        req3 = self.factory.get('/foo/', {'occurred_max': self.a_date})
-        force_authenticate(req3, self.user)
-        res3 = self.view(req3).render()
-        expected_count3 = len([])
-        self.assertEqual(json.loads(res3.content.decode('utf-8'))['count'], expected_count3)
-
-        req4 = self.factory.get('/foo/', {'occurred_max': self.a_later_date})
-        force_authenticate(req4, self.user)
-        res4 = self.view(req4).render()
-        expected_count4 = len([self.early_record])
-        self.assertEqual(json.loads(res4.content.decode('utf-8'))['count'], expected_count4)
-
-        req5 = self.factory.get('/foo/', {'occurred_min': self.a_date,
-                                          'occurred_max': self.a_later_date})
-        force_authenticate(req5, self.user)
-        res5 = self.view(req5).render()
-        expected_count5 = len([self.early_record])
-        self.assertEqual(json.loads(res5.content.decode('utf-8'))['count'], 1)
+        # For each filters/matches pair, test to make sure that the date filters
+        # performs correctly.
+        for test in tests:
+            filters = {key: getattr(self, val) for key, val in test['filters'].items()}
+            req = self.factory.get('/foo/', filters)
+            expected_count = len(test['matches'])
+            force_authenticate(req, self.user)
+            res = self.view(req).render()
+            self.assertEqual(json.loads(res.content.decode('utf-8'))['count'],
+                             expected_count,
+                             test)
 
     def test_missing_min_max(self):
         """
