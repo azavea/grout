@@ -33,6 +33,7 @@ class RecordFilter(GeoFilterSet):
 
     # Custom filter definitions.
     record_type = django_filters.Filter(field_name='record_type', method='filter_record_type')
+    geom_intersects = django_filters.Filter(field_name='geom_intersects', method='filter_polygon')
     polygon = django_filters.Filter(field_name='polygon', method='filter_polygon')
     polygon_id = django_filters.Filter(field_name='polygon_id', method='filter_polygon_id')
     occurred_min = django_filters.Filter(field_name='occurred_min', method='filter_occurred_min')

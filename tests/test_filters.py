@@ -8,13 +8,15 @@ from django.contrib.gis.geos import Polygon, MultiPolygon
 
 from rest_framework import viewsets
 from rest_framework.request import Request
-from rest_framework.test import APIRequestFactory
+from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework.exceptions import ParseError
 
 from grout.filters import (BoundaryPolygonFilter, JsonBFilterBackend, RecordFilter,
                            RecordTypeFilter)
 from grout.models import Boundary, BoundaryPolygon, Record, RecordSchema, RecordType
 from grout.views import BoundaryPolygonViewSet, RecordViewSet
+
+from tests.api_test_case import GroutAPITestCase
 
 
 class JsonBFilterViewSet(viewsets.ModelViewSet):
@@ -83,10 +85,12 @@ class JsonBFilterBackendTestCase(TestCase):
         self.assertEqual(queryset[0].record_type, self.id_type)
 
 
-class RecordQueryTestCase(TestCase):
+class RecordQueryTestCase(GroutAPITestCase):
     """ Test Record queries """
 
     def setUp(self):
+        super(RecordQueryTestCase, self).setUp()
+
         self.filter_backend = RecordFilter()
         self.viewset = RecordViewSet()
         self.factory = APIRequestFactory()
@@ -215,6 +219,37 @@ class RecordQueryTestCase(TestCase):
         })
         queryset = self.filter_backend.filter_polygon(self.queryset, 'geom', no_contains0_0)
         self.assertEqual(queryset.count(), 0)
+
+    def test_geom_intersects_query_param(self):
+        """Test that the geom_intersects query param aliases to the polygon filter."""
+        view = RecordViewSet.as_view({'get': 'list'})
+
+        # Test a geometry that contains the records.
+        contains0_0 = json.dumps({
+            'type': 'Polygon',
+            'coordinates': [[[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]]]
+        })
+        contained_record_count = len([self.id_record_1, self.id_record_2,
+                                      self.item_record_1, self.item_record_2])
+
+        contains_req = self.factory.get('/foo/', {'geom_intersects': contains0_0})
+        force_authenticate(contains_req, self.user)
+        contains_res = view(contains_req).render()
+        self.assertEqual(json.loads(contains_res.content.decode('utf-8')).get('count'),
+                         contained_record_count,
+                         contains_res.content)
+
+        # Test a geometry that does not contain the records.
+        no_contains0_0 = json.dumps({
+            'type': 'Polygon',
+            'coordinates': [[[1, 1], [1, 2], [2, 2], [2, 1], [1, 1]]]
+        })
+        no_contains_req = self.factory.get('/foo/', {'geom_intersects': no_contains0_0})
+        force_authenticate(no_contains_req, self.user)
+        no_contains_res = view(no_contains_req).render()
+        self.assertEqual(json.loads(no_contains_res.content.decode('utf-8')).get('count'),
+                         0,
+                         no_contains_res.content)
 
     def test_polygon_filter_parse_error(self):
         """Test that filtering by a malformed GeoJSON polygon raises an error."""
