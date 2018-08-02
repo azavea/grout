@@ -1,14 +1,16 @@
 from collections import OrderedDict
-from datetime import datetime, timedelta
 
 from django.db import IntegrityError
+from dateutil.parser import parse
 
-from rest_framework import viewsets, mixins, status
+from rest_framework import viewsets, mixins, status, serializers
 from rest_framework.decorators import detail_route
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
+from rest_framework.exceptions import ParseError
 from rest_framework_gis.filters import InBBoxFilter
 
+from grout import exceptions
 from grout.models import (Boundary,
                           BoundaryPolygon,
                           Record,
@@ -24,8 +26,7 @@ from grout.filters import (BoundaryFilter,
                            BoundaryPolygonFilter,
                            JsonBFilterBackend,
                            RecordFilter,
-                           RecordTypeFilter,
-                           DateRangeFilterBackend)
+                           RecordTypeFilter)
 
 from grout.pagination import OptionalLimitOffsetPagination
 
@@ -52,8 +53,39 @@ class RecordViewSet(viewsets.ModelViewSet):
     filter_class = RecordFilter
     bbox_filter_field = 'geom'
     jsonb_filter_field = 'data'
-    filter_backends = (InBBoxFilter, JsonBFilterBackend,
-                       DjangoFilterBackend, DateRangeFilterBackend)
+    filter_backends = (InBBoxFilter, JsonBFilterBackend, DjangoFilterBackend)
+
+    def get_queryset(self):
+        """
+        Validate the input parameters before returning the queryset.
+        """
+        occurred_min = self.request.query_params.get('occurred_min', None)
+        occurred_max = self.request.query_params.get('occurred_max', None)
+
+        # Make sure that occurred_min < occurred_max if both params exist.
+        if occurred_min and occurred_max:
+            # Parse both dates in order to compare them.
+            try:
+                min_date = parse(occurred_max)
+            except ValueError:
+                # The parser could not parse the date string, so raise an error.
+                raise exceptions.QueryParameterException('occurred_max',
+                                                         exceptions.DATETIME_FORMAT_ERROR)
+
+            try:
+                max_date = parse(occurred_max)
+            except ValueError:
+                raise exceptions.QueryParameterException('occurred_max',
+                                                         exceptions.DATETIME_FORMAT_ERROR)
+
+            if occurred_min > occurred_max:
+                messages = {
+                    'occurred_min': exceptions.MIN_DATE_RANGE_FILTER_ERROR,
+                    'occurred_max': exceptions.MAX_DATE_RANGE_FILTER_ERROR
+                }
+                raise serializers.ValidationError(messages)
+
+        return self.queryset
 
 
 class RecordTypeViewSet(viewsets.ModelViewSet):

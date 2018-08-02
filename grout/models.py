@@ -7,15 +7,21 @@ from django.contrib.gis.db import models
 from django.contrib.gis.gdal import DataSource as GDALDataSource
 from django.contrib.postgres.fields import JSONField
 from django.core.validators import MinLengthValidator
+from rest_framework import serializers
 
 import jsonschema
 
 from grout.imports.shapefile import (extract_zip_to_temp_dir,
                                      get_shapefiles_in_dir,
                                      make_multipolygon)
+from grout.exceptions import (GEOMETRY_TYPE_ERROR, DATETIME_REQUIRED, DATETIME_NOT_PERMITTED,
+                              MIN_DATE_RANGE_ERROR, MAX_DATE_RANGE_ERROR)
 
 
 class GroutModel(models.Model):
+    """
+    Base class providing attributes common to all Grout data types.
+    """
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
@@ -24,14 +30,52 @@ class GroutModel(models.Model):
         abstract = True
 
 
-class SchemaModel(GroutModel):
+class RecordType(GroutModel):
+    """
+    Store metadata for a class of Records.
+    """
+    class GeometryType(object):
+        POINT = 'point'
+        POLYGON = 'polygon'
+        MULTIPOLYGON = 'multipolygon'
+        LINESTRING = 'linestring'
+        NONE = 'none'
+        CHOICES = (
+            (POINT, 'Point'),
+            (POLYGON, 'Polygon'),
+            (MULTIPOLYGON, 'MultiPolygon'),
+            (LINESTRING, 'LineString'),
+            (NONE, 'None'),
+        )
+
+    label = models.CharField(max_length=64)
+    plural_label = models.CharField(max_length=64)
+    description = models.TextField(blank=True, null=True)
+    active = models.BooleanField(default=True)
+    geometry_type = models.CharField(max_length=12,
+                                     choices=GeometryType.CHOICES,
+                                     default=GeometryType.POINT)
+    temporal = models.BooleanField(default=True)
+
+    def get_current_schema(self):
+        schemas = self.schemas.order_by('-version')
+        return schemas[0] if len(schemas) > 0 else None
+
+
+class RecordSchema(GroutModel):
+    """
+    A flexible schema describing the data contained by a Record.
+    """
     version = models.PositiveIntegerField()
     schema = JSONField()
     next_version = models.OneToOneField('self', related_name='previous_version', null=True,
                                         editable=False, on_delete=models.CASCADE)
+    record_type = models.ForeignKey('RecordType',
+                                    related_name='schemas',
+                                    on_delete=models.CASCADE)
 
     class Meta(object):
-        abstract = True
+        unique_together = (('record_type', 'version'),)
 
     def validate_json(self, json_dict):
         """Validates a JSON-like dictionary against this object's schema
@@ -53,42 +97,83 @@ class SchemaModel(GroutModel):
 
 
 class Record(GroutModel):
-    """Spatiotemporal records -- e.g. Loch Ness Monster sightings, crime events, etc."""
-    occurred_from = models.DateTimeField()
-    occurred_to = models.DateTimeField()
-
-    geom = models.PointField(srid=settings.GROUT['SRID'])
-    location_text = models.CharField(max_length=200, null=True, blank=True)
-
+    """
+    An entity in the database. An entry of a given RecordType, following a
+    schema defined by a certain RecordSchema.
+    """
     schema = models.ForeignKey('RecordSchema', on_delete=models.CASCADE)
-    data = JSONField()
-
+    data = JSONField(blank=True)  # `blank` lets us store empty dicts ({}).
     archived = models.BooleanField(default=False)
+    occurred_from = models.DateTimeField(null=True, blank=True)
+    occurred_to = models.DateTimeField(null=True, blank=True)
+    geom = models.GeometryField(srid=settings.GROUT['SRID'], null=True, blank=True)
+    location_text = models.CharField(max_length=200, null=True, blank=True)
 
     class Meta(object):
         ordering = ('-created',)
 
+    def clean(self):
+        """
+        Provide custom field validation for this model.
+        """
+        errors = {}
 
-class RecordType(GroutModel):
-    """ Store extra information for a given RecordType, associated schemas in RecordSchema """
-    label = models.CharField(max_length=64)
-    plural_label = models.CharField(max_length=64)
-    description = models.TextField(blank=True, null=True)
-    active = models.BooleanField(default=True)
+        # Make sure that incoming geometry matches the geometry_type of the
+        # RecordType for this Record.
+        expected_geotype = self.schema.record_type.get_geometry_type_display()
+        record_type_id = self.schema.record_type.uuid
 
-    def get_current_schema(self):
-        schemas = self.schemas.order_by('-version')
-        return schemas[0] if len(schemas) > 0 else None
+        if self.geom:
+            incoming_geotype = self.geom.geom_type
+        else:
+            incoming_geotype = 'None'
 
+        if incoming_geotype != expected_geotype:
+            geom_error = GEOMETRY_TYPE_ERROR.format(incoming=incoming_geotype,
+                                                    expected=expected_geotype,
+                                                    uuid=record_type_id)
+            errors['geom'] = geom_error
 
-class RecordSchema(SchemaModel):
-    """Schemas for spatiotemporal records"""
-    record_type = models.ForeignKey('RecordType',
-                                    related_name='schemas',
-                                    on_delete=models.CASCADE)
+        # Make sure that incoming datetime information matches the `temporal`
+        # flag on the RecordType for this Record.
+        datetime_required = self.schema.record_type.temporal
 
-    class Meta(object):
-        unique_together = (('record_type', 'version'),)
+        if datetime_required:
+            if self.occurred_from is None or self.occurred_to is None:
+                # `occurred_from` and `occurred_to` must be present on a temporal
+                # Record.
+                if self.occurred_from is None:
+                    errors['occurred_from'] = DATETIME_REQUIRED.format(uuid=record_type_id)
+                if self.occurred_to is None:
+                    errors['occurred_to'] = DATETIME_REQUIRED.format(uuid=record_type_id)
+            else:
+                # `occurred_from` cannot be a later date than `occurred_to`.
+                # Since by the time that this method is called the values are
+                # already attributes on the model, and since we've already
+                # confirmed that neither value is null, we can assume for the
+                # purposes of comparison that the values are datetime objects.
+                if self.occurred_from > self.occurred_to:
+                    errors['occurred_from'] = MIN_DATE_RANGE_ERROR
+                    errors['occurred_to'] = MAX_DATE_RANGE_ERROR
+        else:
+            if self.occurred_from is not None:
+                occurred_from_error = DATETIME_NOT_PERMITTED.format(uuid=record_type_id)
+                errors['occurred_from'] = occurred_from_error
+            if self.occurred_to is not None:
+                occurred_to_error = DATETIME_NOT_PERMITTED.format(uuid=record_type_id)
+                errors['occurred_to'] = occurred_to_error
+
+        if errors.keys():
+            # Raise a DRF ValidationError instead of a Django Core validation
+            # error, since this exception needs to get handled by the serializer.
+            raise serializers.ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        """
+        Extend the model's save method to run custom field validators.
+        """
+        self.clean()
+        return super(Record, self).save(*args, **kwargs)
 
 
 class Boundary(GroutModel):

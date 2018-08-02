@@ -43,12 +43,9 @@ class RecordTypeSerializer(ModelSerializer):
         return uuid
 
 
-class SchemaSerializer(ModelSerializer):
-    """Base class for serializers of subclasses of models.SchemaModel"""
+class RecordSchemaSerializer(ModelSerializer):
+
     schema = JsonSchemaField()
-
-
-class RecordSchemaSerializer(SchemaSerializer):
 
     def create(self, validated_data):
         """Creates new schema or creates new version and updates next_version of previous"""
