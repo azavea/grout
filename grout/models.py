@@ -14,7 +14,8 @@ import jsonschema
 from grout.imports.shapefile import (extract_zip_to_temp_dir,
                                      get_shapefiles_in_dir,
                                      make_multipolygon)
-from grout.exceptions import GEOMETRY_TYPE_ERROR, DATETIME_REQUIRED, DATETIME_NOT_PERMITTED
+from grout.exceptions import (GEOMETRY_TYPE_ERROR, DATETIME_REQUIRED, DATETIME_NOT_PERMITTED,
+                              MIN_DATE_RANGE_ERROR, MAX_DATE_RANGE_ERROR)
 
 
 class GroutModel(models.Model):
@@ -138,12 +139,22 @@ class Record(GroutModel):
         datetime_required = self.schema.record_type.temporal
 
         if datetime_required:
-            if self.occurred_from is None:
-                occurred_from_error = DATETIME_REQUIRED.format(uuid=record_type_id)
-                errors['occurred_from'] = occurred_from_error
-            if self.occurred_to is None:
-                occurred_to_error = DATETIME_REQUIRED.format(uuid=record_type_id)
-                errors['occurred_to'] = occurred_to_error
+            if self.occurred_from is None or self.occurred_to is None:
+                # `occurred_from` and `occurred_to` must be present on a temporal
+                # Record.
+                if self.occurred_from is None:
+                    errors['occurred_from'] = DATETIME_REQUIRED.format(uuid=record_type_id)
+                if self.occurred_to is None:
+                    errors['occurred_to'] = DATETIME_REQUIRED.format(uuid=record_type_id)
+            else:
+                # `occurred_from` cannot be a later date than `occurred_to`.
+                # Since by the time that this method is called the values are
+                # already attributes on the model, and since we've already
+                # confirmed that neither value is null, we can assume for the
+                # purposes of comparison that the values are datetime objects.
+                if self.occurred_from > self.occurred_to:
+                    errors['occurred_from'] = MIN_DATE_RANGE_ERROR
+                    errors['occurred_to'] = MAX_DATE_RANGE_ERROR
         else:
             if self.occurred_from is not None:
                 occurred_from_error = DATETIME_NOT_PERMITTED.format(uuid=record_type_id)

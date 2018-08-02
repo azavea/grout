@@ -1,8 +1,7 @@
-from dateutil.parser import parse
 import json
 
 import mock
-
+from dateutil.parser import parse
 from django.test import TestCase
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
@@ -14,8 +13,8 @@ from grout import models
 from grout.views import RecordViewSet
 from grout.exceptions import (QueryParameterException,
                               DATETIME_FORMAT_ERROR,
-                              MIN_DATE_RANGE_ERROR,
-                              MAX_DATE_RANGE_ERROR)
+                              MIN_DATE_RANGE_FILTER_ERROR,
+                              MAX_DATE_RANGE_FILTER_ERROR)
 
 
 class DateFilterBackendTestCase(TestCase):
@@ -214,8 +213,8 @@ class DateFilterBackendTestCase(TestCase):
         force_authenticate(min_gt_max_req, self.user)
         min_gt_max_res = self.view(min_gt_max_req).render()
         self.assertEqual(str(json.loads(min_gt_max_res.content.decode('utf-8')).get('occurred_min')),
-                         MIN_DATE_RANGE_ERROR,
+                         MIN_DATE_RANGE_FILTER_ERROR,
                          min_gt_max_res.content)
         self.assertEqual(str(json.loads(min_gt_max_res.content.decode('utf-8')).get('occurred_max')),
-                         MAX_DATE_RANGE_ERROR,
+                         MAX_DATE_RANGE_FILTER_ERROR,
                          min_gt_max_res.content)

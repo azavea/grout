@@ -29,5 +29,13 @@ DATETIME_REQUIRED = ("This field is required for all Records of RecordType {uuid
                      "the `temporal` flag to False.")
 DATETIME_FORMAT_ERROR = ('ISO 8601 formatted with timezone information. Please check ' +
                          'that the URL is properly encoded.')
-MIN_DATE_RANGE_ERROR = "Value must be the same or earlier than 'occurred_max'."
-MAX_DATE_RANGE_ERROR = "Value must be the same or later than 'occurred_min'."
+BASE_MIN_DATE_RANGE_ERROR = "Value must be the same or earlier than '{max}'."
+BASE_MAX_DATE_RANGE_ERROR = "Value must be the same or later than '{min}'."
+
+# Date range errors for the Record model fields (occurred_from and occurred_to).
+MIN_DATE_RANGE_ERROR = BASE_MIN_DATE_RANGE_ERROR.format(max='occurred_to')
+MAX_DATE_RANGE_ERROR = BASE_MAX_DATE_RANGE_ERROR.format(min='occurred_from')
+
+# Date range errors for the Record filters (occurred_min and occurred_max).
+MIN_DATE_RANGE_FILTER_ERROR = BASE_MIN_DATE_RANGE_ERROR.format(max='occurred_max')
+MAX_DATE_RANGE_FILTER_ERROR = BASE_MAX_DATE_RANGE_ERROR.format(min='occurred_min')

@@ -80,8 +80,8 @@ class RecordViewSet(viewsets.ModelViewSet):
 
             if occurred_min > occurred_max:
                 messages = {
-                    'occurred_min': exceptions.MIN_DATE_RANGE_ERROR,
-                    'occurred_max': exceptions.MAX_DATE_RANGE_ERROR
+                    'occurred_min': exceptions.MIN_DATE_RANGE_FILTER_ERROR,
+                    'occurred_max': exceptions.MAX_DATE_RANGE_FILTER_ERROR
                 }
                 raise serializers.ValidationError(messages)
 
