@@ -28,10 +28,12 @@ class JsonBFilterViewSet(viewsets.ModelViewSet):
     )
 
 
-class JsonBFilterBackendTestCase(TestCase):
+class JsonBFilterBackendTestCase(GroutAPITestCase):
     """ Test serializer field for JsonB """
 
     def setUp(self):
+        super(JsonBFilterBackendTestCase, self).setUp()
+
         self.filter_backend = JsonBFilterBackend()
         self.viewset = JsonBFilterViewSet()
         self.factory = APIRequestFactory()
@@ -46,13 +48,19 @@ class JsonBFilterBackendTestCase(TestCase):
             "description": "An item",
             "type": "object",
             "properties": {
-                "id": {
-                    "description": "The unique identifier for a product",
-                    "type": "integer"
-                },
-                "name": {
-                    "description": "Name of the product",
-                    "type": "string"
+                "details": {
+                    "type": "object",
+                    "title": "Details",
+                    "properties": {
+                        "id": {
+                            "description": "The unique identifier for a product",
+                            "type": "integer"
+                        },
+                        "name": {
+                            "description": "Name of the product",
+                            "type": "string"
+                        }
+                    }
                 }
             },
             "required": ["id", "name"]
@@ -76,6 +84,19 @@ class JsonBFilterBackendTestCase(TestCase):
         schema2 = RecordSchema.objects.create(record_type=self.item_type,
                                               version=1,
                                               schema=item_schema)
+        # Create a Record with the item schema.
+        self.item_record = Record.objects.create(
+            schema=schema2,
+            occurred_from=timezone.now(),
+            occurred_to=timezone.now(),
+            geom='POINT(0 0)',
+            data={
+                'details': {
+                    'id': 1,
+                    'name': 'test record'
+                }
+            }
+        )
 
     def test_valid_jcontains_filter(self):
         """ Test filtering on jsonb keys """
@@ -83,6 +104,53 @@ class JsonBFilterBackendTestCase(TestCase):
         queryset = self.filter_backend.filter_queryset(request, self.queryset, self.viewset)
         self.assertEqual(len(queryset), 1)
         self.assertEqual(queryset[0].record_type, self.id_type)
+
+    def test_valid_filter_view(self):
+        """
+        Test issuing a valid JSONB filter through the REST API returns matched
+        records.
+        """
+        view = RecordViewSet.as_view({'get': 'list'})
+
+        jsonb_query = {
+            'details': {
+                'name': {
+                    '_rule_type': 'containment',
+                    'contains': ['test record']
+                }
+            }
+        }
+
+        contains_req = self.factory.get('/foo/', {'jsonb': json.dumps(jsonb_query)})
+        contained_record_count = len([self.item_record])
+        force_authenticate(contains_req, self.user)
+        contains_res = view(contains_req).render()
+        self.assertEqual(json.loads(contains_res.content.decode('utf-8')).get('count'),
+                         contained_record_count,
+                         contains_res.content)
+
+    def test_filter_with_no_matches_view(self):
+        """
+        Test issuing a valid JSONB filter through the REST API returns no matches
+        when the filter doesn't match any Records.
+        """
+        view = RecordViewSet.as_view({'get': 'list'})
+
+        jsonb_query = {
+            'details': {
+                'name': {
+                    '_rule_type': 'containment',
+                    'contains': ['ladidadidah']
+                }
+            }
+        }
+
+        contains_req = self.factory.get('/foo/', {'jsonb': json.dumps(jsonb_query)})
+        force_authenticate(contains_req, self.user)
+        contains_res = view(contains_req).render()
+        self.assertEqual(json.loads(contains_res.content.decode('utf-8')).get('count'),
+                         0,
+                         contains_res.content)
 
 
 class RecordQueryTestCase(GroutAPITestCase):
