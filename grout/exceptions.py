@@ -19,6 +19,8 @@ class QueryParameterException(APIException):
             return repr(self.detail)
 
 
+SCHEMA_MISMATCH_ERROR = ("Schema validation failed for RecordSchema {uuid}: " +
+                         "{message}")
 GEOMETRY_TYPE_ERROR = ("Incoming Record geometry '{incoming}' does not match the " +
                        "expected geometry type '{expected}' of the RecordType {uuid}.")
 DATETIME_NOT_PERMITTED = ("This field is not permitted for Records of RecordType {uuid}. " +

@@ -5,6 +5,8 @@
 Changes we're making en route to version 2.0. When we cut a release, this
 section will form the changelog for v2.0.
 
+- Added a validation step to `Record.clean()` method checking whether the `data`
+  field of an incoming Record matches its schema [#11](https://github.com/azavea/grout/pull/11)
 - Added `geom_intersects` query parameter as an alias to the existing `polygon`
   query parameter for `Record` queries ([#9](https://github.com/azavea/grout/pull/9))
 - Changed the date range filters `occurred_min` and `occurred_max` to return

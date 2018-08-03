@@ -32,27 +32,11 @@ class DateFilterBackendTestCase(TestCase):
 
         self.item_type = models.RecordType.objects.create(label='item', plural_label='items')
 
-        self.item_schema = {
-            "$schema": "http://json-schema.org/draft-04/schema#",
-            "title": "Item",
-            "description": "An item",
-            "type": "object",
-            "properties": {
-                "id": {
-                    "description": "The unique identifier for a product",
-                    "type": "integer"
-                },
-                "name": {
-                    "description": "Name of the product",
-                    "type": "string"
-                }
-            },
-            "required": ["id", "name"]
-        }
-
-        self.schema = models.RecordSchema.objects.create(record_type=self.item_type,
-                                                  version=1,
-                                                  schema=self.item_schema)
+        self.schema = models.RecordSchema.objects.create(
+            record_type=self.item_type,
+            version=1,
+            schema={}
+        )
 
         # Define five chronological points in time in order to test range filtering.
         self.min_date = parse('2015-01-01T00:00:00+00:00')

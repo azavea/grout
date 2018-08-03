@@ -60,10 +60,11 @@ class JsonBFilterBackendTestCase(GroutAPITestCase):
                             "description": "Name of the product",
                             "type": "string"
                         }
-                    }
+                    },
+                    "required": ["id", "name"]
                 }
             },
-            "required": ["id", "name"]
+            "required": ["details"]
         }
         id_schema = {
             "$schema": "http://json-schema.org/draft-04/schema#",

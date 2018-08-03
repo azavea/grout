@@ -10,12 +10,13 @@ from django.core.validators import MinLengthValidator
 from rest_framework import serializers
 
 import jsonschema
+import jsonschema.exceptions
 
 from grout.imports.shapefile import (extract_zip_to_temp_dir,
                                      get_shapefiles_in_dir,
                                      make_multipolygon)
 from grout.exceptions import (GEOMETRY_TYPE_ERROR, DATETIME_REQUIRED, DATETIME_NOT_PERMITTED,
-                              MIN_DATE_RANGE_ERROR, MAX_DATE_RANGE_ERROR)
+                              MIN_DATE_RANGE_ERROR, MAX_DATE_RANGE_ERROR, SCHEMA_MISMATCH_ERROR)
 
 
 class GroutModel(models.Model):
@@ -112,16 +113,15 @@ class Record(GroutModel):
     class Meta(object):
         ordering = ('-created',)
 
-    def clean(self):
+    def clean_geom(self):
         """
-        Provide custom field validation for this model.
-        """
-        errors = {}
+        Validate that the geometry of a new Record matches the geometry_type
+        of its associated RecordType.
 
-        # Make sure that incoming geometry matches the geometry_type of the
-        # RecordType for this Record.
+        :return: None if schema validates; otherwise, returns an error dict in the
+                 format {'geom': '<error message>'}
+        """
         expected_geotype = self.schema.record_type.get_geometry_type_display()
-        record_type_id = self.schema.record_type.uuid
 
         if self.geom:
             incoming_geotype = self.geom.geom_type
@@ -129,13 +129,22 @@ class Record(GroutModel):
             incoming_geotype = 'None'
 
         if incoming_geotype != expected_geotype:
-            geom_error = GEOMETRY_TYPE_ERROR.format(incoming=incoming_geotype,
-                                                    expected=expected_geotype,
-                                                    uuid=record_type_id)
-            errors['geom'] = geom_error
+            return {'geom': GEOMETRY_TYPE_ERROR.format(incoming=incoming_geotype,
+                                                       expected=expected_geotype,
+                                                       uuid=self.schema.record_type.uuid)}
+        else:
+            return None
 
-        # Make sure that incoming datetime information matches the `temporal`
-        # flag on the RecordType for this Record.
+    def clean_datetime(self):
+        """
+        Validate that the values for `occurred_from` and `occurred_to` match
+        the `temporal` setting of the parent Record type and are syntactically
+        valid.
+
+        :return: None if the fields validate; otherwise, returns an error dict in the
+                 format {'occurred_from': '<error_message>', 'occurred_to': '<error_message>'}
+        """
+        errors = {}
         datetime_required = self.schema.record_type.temporal
 
         if datetime_required:
@@ -143,9 +152,13 @@ class Record(GroutModel):
                 # `occurred_from` and `occurred_to` must be present on a temporal
                 # Record.
                 if self.occurred_from is None:
-                    errors['occurred_from'] = DATETIME_REQUIRED.format(uuid=record_type_id)
+                    errors['occurred_from'] = DATETIME_REQUIRED.format(
+                        uuid=self.schema.record_type.uuid
+                    )
                 if self.occurred_to is None:
-                    errors['occurred_to'] = DATETIME_REQUIRED.format(uuid=record_type_id)
+                    errors['occurred_to'] = DATETIME_REQUIRED.format(
+                        uuid=self.schema.record_type.uuid
+                    )
             else:
                 # `occurred_from` cannot be a later date than `occurred_to`.
                 # Since by the time that this method is called the values are
@@ -157,11 +170,58 @@ class Record(GroutModel):
                     errors['occurred_to'] = MAX_DATE_RANGE_ERROR
         else:
             if self.occurred_from is not None:
-                occurred_from_error = DATETIME_NOT_PERMITTED.format(uuid=record_type_id)
-                errors['occurred_from'] = occurred_from_error
+                errors['occurred_from'] = DATETIME_NOT_PERMITTED.format(
+                    uuid=self.schema.record_type.uuid
+                )
             if self.occurred_to is not None:
-                occurred_to_error = DATETIME_NOT_PERMITTED.format(uuid=record_type_id)
-                errors['occurred_to'] = occurred_to_error
+                errors['occurred_to'] = DATETIME_NOT_PERMITTED.format(
+                    uuid=self.schema.record_type.uuid
+                )
+
+        if errors.keys():
+            return errors
+        else:
+            return None
+
+    def clean_data(self):
+        """
+        Validate that the JSON represented by the `data` field matches the
+        schema for this Record.
+
+        :return: None if the schema validates; otherwise, returns an error dict
+                 in the format {'data': '<error_message'}
+        """
+        try:
+            return self.schema.validate_json(self.data)
+        except jsonschema.exceptions.ValidationError as e:
+            return {
+                'data': SCHEMA_MISMATCH_ERROR.format(uuid=self.schema.uuid,
+                                                     message=e.message)
+            }
+
+    def clean(self):
+        """
+        Provide custom field validation for this model.
+        """
+        errors = {}
+
+        # Make sure that incoming geometry matches the geometry_type of the
+        # RecordType for this Record.
+        geom_error = self.clean_geom()
+        if geom_error:
+            errors.update(geom_error)
+
+        # Make sure that incoming datetime information matches the `temporal`
+        # flag on the RecordType for this Record.
+        datetime_error = self.clean_datetime()
+        if datetime_error:
+            errors.update(datetime_error)
+
+        # Make sure that the incoming JSON data matches the RecordSchema
+        # for this Record.
+        schema_error = self.clean_data()
+        if schema_error:
+            errors.update(schema_error)
 
         if errors.keys():
             # Raise a DRF ValidationError instead of a Django Core validation

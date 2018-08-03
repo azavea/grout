@@ -6,7 +6,6 @@ from django.contrib.gis.geos import (Point, Polygon, LinearRing, MultiPolygon,
                                     LineString)
 from django.utils import timezone
 
-from dateutil.parser import parse
 from rest_framework import status
 
 from tests.api_test_case import GroutAPITestCase
@@ -252,51 +251,6 @@ class PointRecordViewTestCase(GroutAPITestCase):
         # which comes in as JSON.
         expected_coordinates = json.loads(json.dumps(self.point_record.geom.coords))
         self.assertEqual(response_coordinates, expected_coordinates, response_entity)
-
-    def test_temporal_record_with_no_datetime_info_errors(self):
-        """
-        Test that leaving out datetime information for a temporal Record
-        raises an error.
-        """
-        data = {
-            'schema': self.point_schema.uuid,
-            'geom': 'POINT(0 0)',
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
-
-        min_msg = json.loads(response.content.decode('utf-8')).get('occurred_from')
-        max_msg = json.loads(response.content.decode('utf-8')).get('occurred_to')
-        expected_msg = DATETIME_REQUIRED.format(uuid=self.point_record_type.uuid)
-
-        self.assertEqual(min_msg, expected_msg, response.content)
-        self.assertEqual(max_msg, expected_msg, response.content)
-
-    def test_occurred_from_greater_than_occurred_to_errors(self):
-        """
-        Test that if the value for `occurred_from` is greater than the value
-        for `occurred_to` in a temporal Record, the API returns an error.
-        """
-        data = {
-            'schema': self.point_schema.uuid,
-            'occurred_from': parse('2018-08-01T00:00:00+00:00'),
-            'occurred_to': parse('2015-01-01T00:00:00+00:00'),
-            'geom': 'POINT(0 0)',
-            'archived': False,
-            'data': {},
-        }
-
-        response = self.client.post(self.record_endpt, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.content)
-
-        min_msg = json.loads(response.content.decode('utf-8')).get('occurred_from')
-        max_msg = json.loads(response.content.decode('utf-8')).get('occurred_to')
-
-        self.assertEqual(min_msg, MIN_DATE_RANGE_ERROR, response.content)
-        self.assertEqual(max_msg, MAX_DATE_RANGE_ERROR, response.content)
 
 
 class PolygonRecordViewTestCase(GroutAPITestCase):
