@@ -1,40 +1,49 @@
+sudo: required
+
 language: python
-python:
-  - '2.7'
-  - '3.4'
-  - '3.5'
-  - '3.6'
-addons:
-  postgresql: '9.4'
-  apt:
-    packages:
-    - postgresql-9.4-postgis-2.3
-env:
-  - DJANGO_SETTINGS_MODULE='settings_travis'
-before_script:
-  - psql -U postgres -c "create extension postgis"
-install:
-  - pip install --upgrade pip
-  - pip install tox tox-travis
-script:
-  - tox
-deploy:
-  - provider: pypi
-    user: azavea
-    skip_existing: true
-    password:
-      secure: gVivn0yuENFhivdr7ZbE6WQc8SNa9ocWph2UWdfhPLXxpzGivjTJmHNHyU+8VyXqD25rxLDm6KYFOgxKKzdjBsNvle9Jw4DvJkVnO06RJiYJK8SYAE5HElowRpBHu1UNTjh86U1YI6StRsvJGB8zogAshHhhQmpGsmNICkuQc1VCJJHtTOYVLsIVJodAAc98BfR2u+4guz6h3MVjWgIUhk+kqVMv9oq87ryPlWxu5A2w3ZP+abLFdZ2cXLNsx8ZIzmAEYgCOcJkX17Q4mTNWX7kfOy7hYT3TlQhAK90i5qvIlkZmGy6NCuLV3ToxEyGvY4tTqRs4WvWgf3+4P2DblCVbMwednnNunS1cu64FD8Jll3KGV83vWvnJRCF4LgI80E/WN+1T6EbQU71NLb+JDyZsT0UiCFAMoGu+jdg4iqKP3Y5GyOd7ozlhXfoCl+uNHmOaO/idtt2FVSL3+vSMbu1HWsXST2sX1ojOM9OVRoiebxPVzCUDYyc/Z1OMHfp/S8xbGFhjhPwFXTBJ3xzUzCyWUme5oeJhKJuQPXBPXr2yyaUyVIobmBaJnhXPI/1N666tLihYYpNzgs7l5ZNllA0By3KQ9kZjN/WcOlELjnOVlUUNOI9b9b0FvjvFjKrKt2No4VXihRN0VeamZolpO02Kt+mnvcPRpVSKKUqEtGA=
-    on:
-      distributions: sdist bdist_wheel
-      repo: azavea/grout
-      branch: master
-  - provider: pypi
-    user: azavea
-    skip_existing: true
-    server: https://test.pypi.org/legacy/
-    password:
-      secure: gVivn0yuENFhivdr7ZbE6WQc8SNa9ocWph2UWdfhPLXxpzGivjTJmHNHyU+8VyXqD25rxLDm6KYFOgxKKzdjBsNvle9Jw4DvJkVnO06RJiYJK8SYAE5HElowRpBHu1UNTjh86U1YI6StRsvJGB8zogAshHhhQmpGsmNICkuQc1VCJJHtTOYVLsIVJodAAc98BfR2u+4guz6h3MVjWgIUhk+kqVMv9oq87ryPlWxu5A2w3ZP+abLFdZ2cXLNsx8ZIzmAEYgCOcJkX17Q4mTNWX7kfOy7hYT3TlQhAK90i5qvIlkZmGy6NCuLV3ToxEyGvY4tTqRs4WvWgf3+4P2DblCVbMwednnNunS1cu64FD8Jll3KGV83vWvnJRCF4LgI80E/WN+1T6EbQU71NLb+JDyZsT0UiCFAMoGu+jdg4iqKP3Y5GyOd7ozlhXfoCl+uNHmOaO/idtt2FVSL3+vSMbu1HWsXST2sX1ojOM9OVRoiebxPVzCUDYyc/Z1OMHfp/S8xbGFhjhPwFXTBJ3xzUzCyWUme5oeJhKJuQPXBPXr2yyaUyVIobmBaJnhXPI/1N666tLihYYpNzgs7l5ZNllA0By3KQ9kZjN/WcOlELjnOVlUUNOI9b9b0FvjvFjKrKt2No4VXihRN0VeamZolpO02Kt+mnvcPRpVSKKUqEtGA=
-    on:
-      distributions: sdist bdist_wheel
-      repo: azavea/grout
-      branch: develop
+
+python: '3.6'
+
+services:
+  - docker
+
+jobs:
+  include:
+    - stage: test
+      script: ./scripts/test app py27
+      install: skip
+      name: "Python 2.7"
+    - script: ./scripts/test app py34
+      install: skip
+      name: "Python 3.4"
+    - script: ./scripts/test app py35
+      install: skip
+      name: "Python 3.5"
+    - script: ./scripts/test app py36
+      install: skip
+      name: "Python 3.6"
+    - script: ./scripts/test app py37
+      install: skip
+      name: "Python 3.7"
+    - stage: deploy
+      script: skip
+      deploy:
+        - provider: pypi
+          user: azavea
+          skip_existing: true
+          password:
+            secure: gVivn0yuENFhivdr7ZbE6WQc8SNa9ocWph2UWdfhPLXxpzGivjTJmHNHyU+8VyXqD25rxLDm6KYFOgxKKzdjBsNvle9Jw4DvJkVnO06RJiYJK8SYAE5HElowRpBHu1UNTjh86U1YI6StRsvJGB8zogAshHhhQmpGsmNICkuQc1VCJJHtTOYVLsIVJodAAc98BfR2u+4guz6h3MVjWgIUhk+kqVMv9oq87ryPlWxu5A2w3ZP+abLFdZ2cXLNsx8ZIzmAEYgCOcJkX17Q4mTNWX7kfOy7hYT3TlQhAK90i5qvIlkZmGy6NCuLV3ToxEyGvY4tTqRs4WvWgf3+4P2DblCVbMwednnNunS1cu64FD8Jll3KGV83vWvnJRCF4LgI80E/WN+1T6EbQU71NLb+JDyZsT0UiCFAMoGu+jdg4iqKP3Y5GyOd7ozlhXfoCl+uNHmOaO/idtt2FVSL3+vSMbu1HWsXST2sX1ojOM9OVRoiebxPVzCUDYyc/Z1OMHfp/S8xbGFhjhPwFXTBJ3xzUzCyWUme5oeJhKJuQPXBPXr2yyaUyVIobmBaJnhXPI/1N666tLihYYpNzgs7l5ZNllA0By3KQ9kZjN/WcOlELjnOVlUUNOI9b9b0FvjvFjKrKt2No4VXihRN0VeamZolpO02Kt+mnvcPRpVSKKUqEtGA=
+          on:
+            distributions: sdist bdist_wheel
+            repo: azavea/grout
+            branch: master
+        - provider: pypi
+          user: azavea
+          skip_existing: true
+          server: https://test.pypi.org/legacy/
+          password:
+            secure: gVivn0yuENFhivdr7ZbE6WQc8SNa9ocWph2UWdfhPLXxpzGivjTJmHNHyU+8VyXqD25rxLDm6KYFOgxKKzdjBsNvle9Jw4DvJkVnO06RJiYJK8SYAE5HElowRpBHu1UNTjh86U1YI6StRsvJGB8zogAshHhhQmpGsmNICkuQc1VCJJHtTOYVLsIVJodAAc98BfR2u+4guz6h3MVjWgIUhk+kqVMv9oq87ryPlWxu5A2w3ZP+abLFdZ2cXLNsx8ZIzmAEYgCOcJkX17Q4mTNWX7kfOy7hYT3TlQhAK90i5qvIlkZmGy6NCuLV3ToxEyGvY4tTqRs4WvWgf3+4P2DblCVbMwednnNunS1cu64FD8Jll3KGV83vWvnJRCF4LgI80E/WN+1T6EbQU71NLb+JDyZsT0UiCFAMoGu+jdg4iqKP3Y5GyOd7ozlhXfoCl+uNHmOaO/idtt2FVSL3+vSMbu1HWsXST2sX1ojOM9OVRoiebxPVzCUDYyc/Z1OMHfp/S8xbGFhjhPwFXTBJ3xzUzCyWUme5oeJhKJuQPXBPXr2yyaUyVIobmBaJnhXPI/1N666tLihYYpNzgs7l5ZNllA0By3KQ9kZjN/WcOlELjnOVlUUNOI9b9b0FvjvFjKrKt2No4VXihRN0VeamZolpO02Kt+mnvcPRpVSKKUqEtGA=
+          on:
+            distributions: sdist bdist_wheel
+            repo: azavea/grout
+            branch: develop

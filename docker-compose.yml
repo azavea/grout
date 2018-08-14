@@ -7,21 +7,55 @@ services:
     ports:
       - "5432"
 
-  test:
+  py27:
     build:
       context: .
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile.py27
     depends_on:
       - db
     volumes:
       - .:/opt/grout
-    environment:
-      - PYTHONUNBUFFERED=0  # Do not buffer output (allows Docker to stream stdout)
+
+  py34:
+    build:
+      context: .
+      dockerfile: Dockerfile.py34
+    depends_on:
+      - db
+    volumes:
+      - .:/opt/grout
+
+  py35:
+    build:
+      context: .
+      dockerfile: Dockerfile.py35
+    depends_on:
+      - db
+    volumes:
+      - .:/opt/grout
+
+  py36:
+    build:
+      context: .
+      dockerfile: Dockerfile.py36
+    depends_on:
+      - db
+    volumes:
+      - .:/opt/grout
+
+  py37:
+    build:
+      context: .
+      dockerfile: Dockerfile.py37
+    depends_on:
+      - db
+    volumes:
+      - .:/opt/grout
 
   django-admin:
     build:
       context: .
-      dockerfile: Dockerfile.mgmt
+      dockerfile: Dockerfile.py37
     depends_on:
       - db
     volumes:
