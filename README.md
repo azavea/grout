@@ -4,6 +4,37 @@
 
 Grout is a Django app providing a flexible-schema framework for geospatial data.
 
+## Contents
+
+- [**Overview**](#overview)
+- [**Getting started**](#getting-started)
+    - [Django](#django)
+        - [Requirements](#requirements)
+        - [Installation](#installation)
+        - [Configuration](#configuration)
+        - [More examples](#more-examples)
+    - [Standalone project](#standalone-project)
+- [**Concepts**](#concepts)
+    - [Data model](#data-model)
+    - [Versioned schemas](#versioned-schemas)
+- [**API documentation](#api-documentation)
+    - [Pagination](#pagination)
+    - [Resources](#resources)
+        - [RecordTypes](#recordtypes)
+        - [RecordSchemas](#recordschemas)
+        - [Records](#records)
+        - [Boundaries](#boundaries)
+        - [BoundaryPolygons](#boundarypolgons)
+- [**Developing**](#developing)
+    - [Requirements](#requirements-1)
+    - [Installation](#installation-1)
+    - [Running tests](#running-tests)
+        - [Cleaning up](#cleaning-up)
+    - [Making migrations](#making-migrations)
+- [**Resources**](#resources)
+
+## Overview
+
 Grout combines the flexibility of NoSQL databases with the geospatial muscle of
 [PostGIS](http://postgis.org/), allowing you to make migration-free edits to
 your database schema while still having access to powerful geospatial queries.
@@ -297,7 +328,6 @@ set `version: 2` and `next_version: null` for this updated schema:
 
 In addition, Grout will update the initial schema to set `next_version: 2`:
 
-```
 {
   "version": 1,
   "next_version": 2,
@@ -305,7 +335,6 @@ In addition, Grout will update the initial schema to set `next_version: 2`:
     ...
   }
 }
-```
 
 Now, when a user searches for Records in the `cat` RecordType, Grout can find
 the most recent schema by looking for the RecordSchema where `next_version: null`.
@@ -477,7 +506,7 @@ Query Parameters:
 
 * `polygon_id`: UUID
     * Filter to Records which occurred within the Polygon identified by the
-      UUID. The value must refer to a [Boundary](#boundary) in the database.
+      UUID. The value must refer to a [Boundary](#boundaries) in the database.
 
 * `polygon`: GeoJSON
     * Filter to Records which occurred within the bounds of a valid GeoJSON
@@ -541,7 +570,7 @@ Creating a new Boundary and its [BoundaryPolygon](#boundarypolygon) correctly is
 
 #### BoundaryPolygons
 
-BoundaryPolygons store the Shapefile data associated with a [Boundary](#boundary),
+BoundaryPolygons store the Shapefile data associated with a [Boundary](#boundaries),
 including geometry and metadata.
 
 Paths:
@@ -668,5 +697,9 @@ The following resources provide helpful tips for deploying and using Grout.
   purely static app that can read and write flexible schemas from a Grout API.
 - [Demo app](https://github.com/jeancochrane/philly-fliers/): A demo project
   providing an example of incorporating the Grout suite into a Vue.js app.
+- [Grout 2018 Fellowship](https://github.com/azavea/grout-2018-fellowship): A
+  project management repo for working on Grout during Azavea's Summer 2018
+  [Open Source Fellowship](https://fellowship.azavea.com). Useful for
+  documentation around the motivation and trajectory of the project.
 
 ## Alternatives to Grout
