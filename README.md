@@ -192,7 +192,7 @@ a `cat` RecordType. The RecordSchema might look something like this:
             "type": "integer",
             "fieldType": "integer",
             "minimum": 0,
-            "maximum": 100
+            "maximum": 100,
             "isSearchable": true,
             "propertyOrder": 2,
           },
@@ -260,7 +260,7 @@ set `version: 2` and `next_version: null` for this updated schema:
             "type": "integer",
             "fieldType": "integer",
             "minimum": 0,
-            "maximum": 100
+            "maximum": 100,
             "isSearchable": true,
             "propertyOrder": 2,
           },
@@ -297,6 +297,7 @@ set `version: 2` and `next_version: null` for this updated schema:
 
 In addition, Grout will update the initial schema to set `next_version: 2`:
 
+```
 {
   "version": 1,
   "next_version": 2,
@@ -304,6 +305,7 @@ In addition, Grout will update the initial schema to set `next_version: 2`:
     ...
   }
 }
+```
 
 Now, when a user searches for Records in the `cat` RecordType, Grout can find
 the most recent schema by looking for the RecordSchema where `next_version: null`.
