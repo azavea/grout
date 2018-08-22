@@ -17,14 +17,14 @@ Grout is a Django app providing a flexible-schema framework for geospatial data.
 - [**Concepts**](#concepts)
     - [Data model](#data-model)
     - [Versioned schemas](#versioned-schemas)
-- [**API documentation](#api-documentation)
+- [**API documentation**](#api-documentation)
     - [Pagination](#pagination)
     - [Resources](#resources)
         - [RecordTypes](#recordtypes)
         - [RecordSchemas](#recordschemas)
         - [Records](#records)
         - [Boundaries](#boundaries)
-        - [BoundaryPolygons](#boundarypolgons)
+        - [BoundaryPolygons](#boundarypolygons)
 - [**Developing**](#developing)
     - [Requirements](#requirements-1)
     - [Installation](#installation-1)
@@ -701,5 +701,3 @@ The following resources provide helpful tips for deploying and using Grout.
   project management repo for working on Grout during Azavea's Summer 2018
   [Open Source Fellowship](https://fellowship.azavea.com). Useful for
   documentation around the motivation and trajectory of the project.
-
-## Alternatives to Grout
