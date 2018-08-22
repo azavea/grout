@@ -29,8 +29,8 @@ started](#getting-started).
 
 ### Django
 
-If you're developing a Django project, you can easily install Grout as a
-Django app and use it in your project.
+If you're developing a Django project, you can install Grout as a Django app and
+use it in your project.
 
 #### Requirements
 
@@ -48,13 +48,13 @@ Django?](https://docs.djangoproject.com/en/2.1/faq/install/#what-python-version-
 
 Install the Grout library from PyPi using `pip`.
 
-```
+```bash
 $ pip install grout
 ```
 
 To use the bleeding-edge version of Grout, install it from GitHub.
 
-```
+```bash
 $ git clone git@github.com:azavea/grout.git
 ```
 
@@ -96,116 +96,143 @@ urlpatterns = grout_urlpatterns
 
 #### Configuration
 
-Here's a sample setup for a development project:
+Grout requires the `GROUT` configuration variable be defined in your `settings.py` file
+in order to work properly. The `GROUT` variable is a dictionary of configuration
+directives for the app.
+
+Currently, `'SRID'` is the only required key in the `GROUT` dictionary. `'SRID'` is an integer
+corresponding to the [spatial reference
+identifier](https://en.wikipedia.org/wiki/Spatial_reference_system#Identifier)
+that Grout should use to store geometries. `4326` is the most common SRID, and
+is a good default for projects.
+
+Here's an example configuration for a development project:
 
 ```python
 # settings.py
 
 # The projection for geometries stored in Grout.
 GROUT = { 'SRID': 4326 }
-
-# Default admin credentials for development.
-DEFAULT_ADMIN_EMAIL = 'grout@azavea.com'
-DEFAULT_ADMIN_USERNAME = 'admin'
-DEFAULT_ADMIN_PASSWORD = 'admin'
-
-# Names of the different authentication groups. These are used primari
-USER_GROUPS = {
-    'READ_ONLY': 'public',
-    'READ_WRITE': 'staff',
-    'ADMIN': 'admin'
-}
 ```
 
 Note that Grout uses [Django REST Framework](http://www.django-rest-framework.org/)
-under the hood to provide RESTful API endpoints. To configure DRF settings like
+under the hood to provide API endpoints. To configure DRF-specific settings like
 authentication, see the [DRF docs](http://www.django-rest-framework.org/).
+
+#### More examples
+
+[Grout Server](https://github.com/azavea/grout-server) is a simple deployment
+of a Grout API server designed to be used as a standalone app. It also serves
+as a good example of how to incorporate Grout into a Django project, and
+includes a preconfigured authentication module to boot. If you're
+having trouble installing or configuring Grout in your project, Grout Server
+is a good resource for troubleshooting.
 
 ### Standalone project
 
-## Useful links
-
-- [Grout Server](https://github.com/azavea/grout-server), an easily-deployable
-  standalone instance of a Grout API server
-- [Grout Schema Editor](https://github.com/azavea/grout-schema-editor), a
-  purely static app that can read and write flexible schemas from a Grout API
-- [Demo app](https://github.com/jeancochrane/philly-fliers/) showing how to
-  incorporate the Grout suite into your application
-
-## Usage
-
-### Installation
-
-
+If you're not a Django developer, you can still use Grout as a standalone
+API server using the [Grout Server](https://github.com/azavea/grout-server)
+project. See the [Grout Server docs](https://github.com/azavea/grout-server)
+for details on how to install a Grout Server instance.
 
 ## Developing
 
 These instructions will help you set up a development version of Grout and
 contribute changes back upstream.
 
+### Requirements
+
+The Grout development environment is containerized with Docker to ensure similar
+environments across platforms. In order to develop with Docker, you need the
+following dependencies:
+
+- [Docker CE Engine](https://docs.docker.com/install/) >= 1.13.0 (must be
+  compatible with [Docker Compose file v3
+  syntax](https://docs.docker.com/compose/compose-file/#compose-and-docker-compatibility-matrix))
+- [Docker Compose](https://docs.docker.com/compose/install/)
+
 ### Installation
 
+Clone the repo with git.
 
+```bash
+$ git clone git@github.com:azavea/grout.git
+$ cd grout
+```
+
+Run the `update` script to set up your development environment.
+
+```bash
+$ ./scripts/update
+```
+
+### Running tests
+
+Once your environment is up to date, you can use the `scripts/test` script to
+run the Grout unit test suite.
+
+```bash
+$ ./scripts/test
+```
+
+This command will run a matrix of tests for **every supported version of Python and
+Django** in the project. If you're developing locally and you just want to run
+a subset of the tests, you can specify the version of Python
+that you want to use to run tests: 
+
+```bash
+# Only run tests for Python 2.7 (this will test Django 1.8).
+$ ./scripts/test app py27
+
+# Only run tests for Python 3.7 (this will test Django 2.0).
+$ ./scripts/test app py37
+```
+
+For a list of available Python versions, see the `envlist` directive in the [`tox.ini`
+file](./tox.ini). 
+
+#### Cleaning up
+
+Tox creates a new virtualenv for every combination of Python and Django versions
+used by the test suite. In order to clean up stopped containers and
+remove these virtualenvs, use the `clean` script:
+
+```bash
+$ ./scripts/clean
+```
+
+Note that `clean` will remove **all dangling images, stopped containers, and 
+unused volumes** on your machine. If you don't want to remove these artifacts,
+[view the `clean` script](./scripts/clean) and run only the command that
+interests you.
 
 ### Making migrations
 
 If you edit the data model in `grout/models.py`, you'll need to create a new
 migration for the app. You can use the `django-admin` script in the `scripts`
-directory to automatically generate the migrations:
+directory to automatically generate the migration:
 
 ```bash
-./scripts/django-admin makemigrations
+$ ./scripts/django-admin makemigrations
 ```
 
 Make sure to register the new migrations file with Git:
 
 ```bash
-git add grout/migrations
+$ git add grout/migrations
 ```
 
-### Testing
-
-### Requirements
-
-- [Docker](http://docs.docker.com/installation/ubuntulinux/)
-- [docker-compose](https://docs.docker.com/compose/install/) > 2.0
-
-### Running tests
-
-Use the `scripts/test` script to run tests:
-
-```
-./scripts/test
-```
-
-This will run a matrix of tests for **every supported version of Python and
-Django**. If you're developing locally and you just want to run tests once, you
-can specify the version you want to run: 
-
-```
-# Only run tests for Python 2.7 and Django 1.8
-./scripts/test app py27-django18
-```
-
-For a list of available versions, see the `envlist` directive in the [`tox.ini`
-file](./tox.ini). 
-
-To clean up stopped containers and virtualenvs, use the `clean` script:
-
-```
-./scripts/clean
-```
-
-### Notes on test execution
-
-- You might see duplicate key errors from the db container; these are generated
-deliberately by the test suite and can be safely ignored.
-
-- If your tests crash and leave a `test_postgres` database lying around that prevents you
-from running further tests, the simplest solution is to run `docker-compose rm db`, which
-will delete the database container and refresh it from the base image. You can
-also delete the database container in a shell prompt when running
-`./scripts/test` again after a crash.
-
+## Usage
 
 ## How it works 
+
+## Resources 
+
+- [Grout Server](https://github.com/azavea/grout-server), an easily-deployable
+  standalone instance of a Grout API server.
+- [Grout Schema Editor](https://github.com/azavea/grout-schema-editor), a
+  purely static app that can read and write flexible schemas from a Grout API.
+- [Demo app](https://github.com/jeancochrane/philly-fliers/) showing how to
+  incorporate the Grout suite into your application.
+
+## Alternatives to Grout
