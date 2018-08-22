@@ -310,8 +310,264 @@ the most recent schema by looking for the RecordSchema where `next_version: null
 This preserves a full audit trail of the RecordSchema, allowing us to
 inspect how the schema has changed over time.
 
-For a closer look at the data model, see the [`models.py` file in the Grout
+For a closer look at the Grout data model, see the [`models.py` file in the Grout
 library](https://github.com/azavea/grout/blob/develop/grout/models.py).
+
+## API documentation
+
+Communication with the API generally follows the principles of RESTful API design.
+API paths correspond to resources, `GET` requests are used to retrieve objects, `POST`
+requests are used to create new objects, and `PATCH` requests are used to update
+existing objects. This pattern is followed in nearly all cases; any exceptions
+will be noted in the documentation.
+
+Responses from the API are exclusively JSON.
+
+Endpoint behavior can be configured using query parameters for `GET` requests,
+while `POST` requests require a payload in JSON format.
+
+### Pagination
+
+All API endpoints that return lists of resources are paginated. The pagination takes the following format:
+
+```
+{
+    "count": 57624,
+    "next": "http://localhost:8000/api/records/?offset=20",
+    "previous": "http://localhost:7000/api/records/",
+    "results": [
+        ...
+    ]
+}
+```
+
+In a real response, the domain and port for the `next` and `previous` fields
+will be that of the server responding to the request.
+
+This format applies to the API endpoints below and will not be repeated in the
+documentation for each individual endpoint.
+
+### Resources
+
+#### RecordTypes
+
+Because the RecordSchema for a set of Records can change at any time, the RecordType API
+endpoint provides a consistent access point for retrieving a set of Records.
+Use the RecordType endpoints to discover the most recent RecordSchema for the Records
+you are interested in before performing further queries.
+
+Paths:
+
+* List: `/api/recordtypes/`
+* Detail: `/api/recordtypes/{uuid}/`
+
+Query parameters:
+
+* `active`: Boolean
+    * Filter for only RecordTypes with an `active` value of True.
+      Generally, you will want to limit yourself to active RecordTypes.
+
+Results fields:
+
+| Field name | Type | Description |
+| ---------- | ---- | ----------- |
+| `uuid` | UUID | Unique identifier for this RecordType. |
+| `current_schema` | UUID | The most recent RecordSchema for this RecordType. |
+| `created` | Timestamp | The date and time when this RecordType was created. |
+| `modified` | Timestamp | The date and time when this RecordType was last modified. |
+| `label` | String | The name of this RecordType. |
+| `plural_label` | String | The plural version of the name of this RecordType. |
+| `description` | String | A short description of this RecordType. |
+| `active` | Boolean | Whether or not this RecordType is active. This field allows RecordTypes to be deactivated rather than deleted. |
+| `geometry_type` | String | The geometry type supported for Records of this RecordType. One of `point`, `polygon`, `multipolygon`, `linestring`, or `none`. | 
+| `temporal` | Boolean | Whether or not Records of this RecordType should store datetime data in the `occurred_from` and `occurred_to` fields. |
+
+#### RecordSchemas
+
+The RecordSchema API endpoint can help you discover the fields that
+should be available on a given Record. This can be useful for automatically generating filters
+based on a Record's fields, or for running custom validation on a Record's
+schema.
+
+Paths:
+
+* List: `/api/recordschemas/`
+* Detail: `/api/recordschemas/{uuid}/`
+
+Results fields:
+
+| Field name | Type | Description |
+| ---------- | ---- | ----------- |
+| `uuid` | UUID | Unique identifier for this RecordSchema. |
+| `created` | Timestamp | The date and time when this RecordSchema was created. |
+| `modified` | Timestamp | The date and time when this RecordSchema was last modified. |
+| `version` | Integer | A sequential number indicating what version of the RecordType's schema this is. Starts at 1. |
+| `next_version` | UUID | Unique identifier of the RecordSchema with the next-highest version number for this schema's RecordType. If this is the most recent version of the schema, this field will be `null`. |
+| `record_type` | UUID | Unique identifier of the RecordType that this RecordSchema refers to. |
+| `schema` | Object | A [JSONSchema](http://json-schema.org/) object that should validate Records that refer to this RecordSchema. |
+
+#### Records
+
+Records are the heart of a Grout project: the entities in your database. The
+Records API endpoint provides a way of retrieving these objects for analysis
+or display to an end user.
+
+Paths:
+
+* List: `/api/records/`
+* Detail: `/api/records/{uuid}/`
+
+Query Parameters:
+
+* `archived`: Boolean
+    * Records can be "archived" to denote that they are no longer current, as an
+      alternative to deletion. Pass `True` (case-sensitive) to this parameter to return archived
+      Records only, and pass `False` (case-sensitive) to return current Records only.
+      Omitting this parameter returns both types.
+
+* `details_only`: Boolean
+    * In the [Grout Schema Editor](https://github.com/azavea/grout-schema-editor),
+      every Record is automatically generated with a `<record_type>Details`
+      form which is intended to contain a basic summary of information about the Record.
+      Passing `True` (case-sensitive) to this parameter will omit any other
+      forms which may exist on the Record. This is useful for limiting the size
+      of the payload returned when only a summary view is needed.
+
+* `record_type`: UUID
+    * Limit the response to Records matching the passed RecordType UUID.
+      This is optional in theory, but for most applications it is a good idea
+      to include this parameter by default. It is considered rare that it will
+      be useful to return two different types of Records in a single request.
+      It is usually a better idea to make a separate request for each RecordType.
+
+* `jsonb`: Object
+    * Query the data fields of the object and filter on the result.
+    * Keys in this object mimic the search paths to filter on a particular object
+      field. However, in place of values, a filter rule definition is used. Example:
+`{ "accidentDetails": {
+    "Main+cause": {
+        "_rule_type": "containment",
+        "contains": [
+            "Vehicle+defect",
+            "Road+defect",
+            ["Vehicle+defect"],
+            ["Road+defect"]
+        ]
+    },
+    "Num+driver+casualties": {
+        "_rule_type": "intrange",
+        "min": 1,
+        "max": 3
+    }
+}}`. This query defines the following two filters:
+        * `accidentDetails -> "Main cause" == "Vehicle defect" OR accidentDetails -> "Main cause" == "Road defect"`
+        * `accidentDetails -> "Num driver casualties" >= 1 AND accidentDetails -> "Num driver casualties" <= 3`
+    * There is a third filter rule type available: `containment_multiple`.
+      This is used when searching a form of which there can be several on a single Record.
+      Here's an example:
+`{"person":{"Injury":{"_rule_type":"containment_multiple","contains":["Fatal"]}}}`
+
+* `occurred_min`: Timestamp
+    * Filter to Records occurring after this date.
+
+* `occurred_max`: Timestamp
+    * Filter to Records occurring before this date.
+
+* `polygon_id`: UUID
+    * Filter to Records which occurred within the Polygon identified by the
+      UUID. The value must refer to a [Boundary](#boundary) in the database.
+
+* `polygon`: GeoJSON
+    * Filter to Records which occurred within the bounds of a valid GeoJSON
+      object.
+
+Results fields:
+
+| Field name | Type | Description |
+| ---------- | ---- | ----------- |
+| `uuid` | UUID | Unique identifier for this Record. |
+| `created` | Timestamp | The date and time when this Record was created. |
+| `modified` | Timestamp | The date and time when this Record was last modified. |
+| `occurred_from` | Timestamp | The earliest time at which this Record might have occurred. |
+| `occurred_to` | Timestamp | The latest time at which this Record might have occurred. Note that this field is mandatory for temporal Records: if a Record only occurred at one moment in time, the `occurred_from` field and the `occurred_to` field will have the same value.  |
+| `geom` | GeoJSON | Geometry representing the location associated with this Record. |
+| `location_text` | String | A description of the location where this Record occurred, typically an address. |
+| `archived` | Boolean | A way of hiding records without deleting them completely. `True` indicates the Record is archived. |
+| `schema` | UUID | References the RecordSchema which was used to create this Record. |
+| `data` | Object | A JSON object representing the flexible data fields associated with this Record. It is always true that the object stored in `data` conforms to the RecordSchema referenced by the `schema` UUID. |
+
+#### Boundaries
+
+Boundaries provide a quick way of storing Shapefile data in Grout without
+having to create separate RecordTypes. Using a Boundary, you can upload
+and retrieve Shapefile data for things like administrative borders and focus
+areas in your application.
+
+Paths:
+
+* List: `/api/boundaries/`
+* Detail: `/api/boundaries/{uuid}/`
+
+Results fields:
+
+| Field name | Type | Description |
+| ---------- | ---- | ----------- |
+| `uuid` | UUID | Unique identifier for this Boundary. |
+| `created` | Timestamp | The date and time when this Boundary was created. |
+| `modified` | Timestamp | The date and time when this Boundary was last modified. |
+| `label` | String | Label of this Boundary, for display. |
+| `color` | String | Color preference to use for rendering this Boundary. |
+| `display_field` | String | Which field of the imported Shapefile to use for display. |
+| `data_fields` | Array | List of the names of the fields contained in the imported Shapefile. |
+| `errors` | Array | A possible list of errors raised when importing the Shapefile. |
+| `status` | String | Import status of the Shapefile. |
+| `source_file` | String | URI of the Shapefile that was originally used to generate this Boundary. |
+
+Notes:
+
+Creating a new Boundary and its [BoundaryPolygon](#boundarypolygon) correctly is a two-step process.
+
+1. `POST` to `/api/boundaries/` with a zipped Shapefile attached; you will need
+   to include the label as form data. You should receive a 201 response which
+   contains a fully-fledged Boundary object, including a list of available
+   data fields in `data_fields`.
+
+2. The response from the previous request will have a blank `display_field`.
+   Select one of the fields in `data_fields` and make a `PATCH` request to
+   `/api/boundaries/{uuid}/` with that value in `display_field`.
+   You are now ready to use this Boundary and its associated BoundaryPolygon.
+
+#### BoundaryPolygons
+
+BoundaryPolygons store the Shapefile data associated with a [Boundary](#boundary),
+including geometry and metadata.
+
+Paths:
+
+* List: `/api/boundarypolygons/`
+* Detail: `/api/boundarypolygons/{uuid}/`
+
+Query Parameters:
+
+* `boundary`: UUID
+    * Filter to Polygons associated with this parent Boundary.
+
+* `nogeom`: Boolean
+    * When passed with any value, causes the geometry field to be replaced with
+      a bbox field. This reduces the response size and is sufficient for many purposes.
+
+Results fields:
+
+| Field name | Type | Description |
+| ---------- | ---- | ----------- |
+| `uuid` | UUID | Unique identifier for this BoundaryPolygon. |
+| `created` | Timestamp | The date and time when this BoundaryPolygon was created. |
+| `modified` | Timestamp | The date and time when this BoundaryPolygon was last modified. |
+| `data` | Object | Each key in this Object will correspond to one of the `data_fields` in the parent Boundary, and will store the value for that field for this Polygon. |
+| `boundary` | UUID | Unique identifier of the parent Boundary for this BoundaryPolygon. |
+| `bbox` | Array | Minimum bounding box containing this Polygon's geometry, as
+an Array of lat/lon points. This field is optional -- see the `nogeom` parameter above for more details. |
+| `geometry` | GeoJSON | GeoJSON representation of this Polygon. This field is optional -- see the `nogeom` parameter above for more details. |
 
 ## Developing
 
