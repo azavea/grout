@@ -225,7 +225,7 @@ a `cat` RecordType. The RecordSchema might look something like this:
             "minimum": 0,
             "maximum": 100,
             "isSearchable": true,
-            "propertyOrder": 2,
+            "propertyOrder": 2
           },
           "Color": {
             "type": "string",
@@ -293,14 +293,14 @@ set `version: 2` and `next_version: null` for this updated schema:
             "minimum": 0,
             "maximum": 100,
             "isSearchable": true,
-            "propertyOrder": 2,
+            "propertyOrder": 2
           },
           "Date of Birth: {
             "type": "string",
             "format": "datetime",
             "fieldType": "text",
             "isSearchable": true,
-            "propertyOrder": 3,
+            "propertyOrder": 3
           },
           "Color": {
             "type": "string",
