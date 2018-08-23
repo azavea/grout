@@ -713,7 +713,7 @@ The following resources provide helpful tips for deploying and using Grout.
 ### Historical documents
 
 - [Concept map](./docs/concept-map.md): An early description of the Grout suite
-  (formerly known as Ashlar) from an open source fellow working on it during the summer
+  (formerly known as Ashlar) from an Open Source Fellow working on it during the summer
   of 2018. Describes the conceptual architecture of the suite, and summarizes
   ideas for future directions.
 

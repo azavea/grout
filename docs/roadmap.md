@@ -86,7 +86,7 @@ suite for application developers.
 
 ## Long-term
 
-### Distribute Android version of the schema editor's data collector
+### Distribute Android version of the data collector
 
 The initial application built on top of Grout was deployed with an Android app
 for performing data collection in the field. This work is encapsulated in the
@@ -104,7 +104,7 @@ arbitrary geometries. However, as our [NoSQL backend
 research revealed](./nosql-backends.md), the landscape has changed since,
 and it continues to improve: there is at least one alternate backend that could
 work for Grout (MongoDB) and some early attempts at managed versions of those
-backends (MongoDB stitch). In 6-12 months, we plan to revisit this research
+backends (MongoDB Stitch). In 6-12 months, we plan to revisit this research
 and decide whether the value proposition of alternative backends has improved.
 
 ### Refactor the schema editor with a modern framework
