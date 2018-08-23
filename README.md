@@ -33,6 +33,9 @@ Grout is a flexible-schema framework for geospatial data, powered by Django and 
         - [Cleaning up](#cleaning-up)
     - [Making migrations](#making-migrations)
 - [**Resources**](#resources)
+    - [Grout suite](#grout-suite)
+    - [Historical documents](#historical-documents)
+    - [Roadmap](#roadmap)
 
 ## Introduction
 
@@ -698,13 +701,40 @@ $ git add grout/migrations
 
 The following resources provide helpful tips for deploying and using Grout.
 
+### Grout suite
+
 - [Grout Server](https://github.com/azavea/grout-server): An easily-deployable
   standalone instance of a Grout API server.
 - [Grout Schema Editor](https://github.com/azavea/grout-schema-editor): A
   purely static app that can read and write flexible schemas from a Grout API.
 - [Demo app](https://github.com/jeancochrane/philly-fliers/): A demo project
   providing an example of incorporating the Grout suite into a Vue.js app.
+
+### Historical documents
+
+- [Concept map](./docs/concept-map.md): An early description of the Grout suite
+  (formerly known as Ashlar) from an open source fellow working on it during the summer
+  of 2018. Describes the conceptual architecture of the suite, and summarizes
+  ideas for future directions.
+
+- [Renaming the package to Grout](./docs/rename-package.md): An ADR documenting
+  the decision to rename the package from "Ashlar" to "Grout".
+
+- [Evaluating Record-to-Record references](./docs/foreign-keys.md): An ADR
+  documenting the reasons and requirements for implementing a Record-to-Record
+  foreign key field. See also [the pull request
+  thread](https://github.com/azavea/grout-2018-fellowship/pull/34) for further
+  discussion.
+
+- [Evaluating alternate backends](./docs/nosql-backends.md): An ADR presenting
+  research into possible NoSQL backends and service providers for Grout.
+
 - [Grout 2018 Fellowship](https://github.com/azavea/grout-2018-fellowship): A
   project management repo for working on Grout during Azavea's Summer 2018
   [Open Source Fellowship](https://fellowship.azavea.com). Useful for
   documentation around the motivation and trajectory of the project.
+
+### Roadmap
+
+Want to know where Grout is headed? See the [Roadmap](./docs/roadmap.md) to
+get a picture of future development.
