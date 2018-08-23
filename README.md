@@ -2,22 +2,23 @@
 
 [![Build Status](https://travis-ci.org/azavea/grout.svg?branch=develop)](https://travis-ci.org/azavea/grout)
 
-Grout is a Django app providing a flexible-schema framework for geospatial data.
+Grout is a flexible-schema framework for geospatial data, powered by Django and PostgreSQL. Think: NoSQL database server, but with schema validation and PostGIS support.
 
 ## Contents
 
-- [**Overview**](#overview)
+- [**Introduction**](#introduction)
 - [**Getting started**](#getting-started)
     - [Django](#django)
         - [Requirements](#requirements)
         - [Installation](#installation)
         - [Configuration](#configuration)
         - [More examples](#more-examples)
-    - [Standalone project](#standalone-project)
+    - [Non-Django applications](#non-django-applications)
 - [**Concepts**](#concepts)
     - [Data model](#data-model)
     - [Versioned schemas](#versioned-schemas)
 - [**API documentation**](#api-documentation)
+    - [Request and response formats](#request-and-response-formats)
     - [Pagination](#pagination)
     - [Resources](#resources)
         - [RecordTypes](#recordtypes)
@@ -33,12 +34,11 @@ Grout is a Django app providing a flexible-schema framework for geospatial data.
     - [Making migrations](#making-migrations)
 - [**Resources**](#resources)
 
-## Overview
+## Introduction
 
 Grout combines the flexibility of NoSQL databases with the geospatial muscle of
 [PostGIS](http://postgis.org/), allowing you to make migration-free edits to
 your database schema while still having access to powerful geospatial queries.
-Think NoSQL databases, but with schema validation and PostGIS support.
 
 Grout will help you:
 
@@ -53,8 +53,10 @@ in a Django project, or you can deploy it as a [standalone API
 server](https://github.com/azavea/grout-server) with an optional [admin
 backend](https://github.com/azavea/grout-schema-editor).
 
-For more information on the different ways to use Grout, see [Getting
-started](#getting-started).
+Ready for more? To get started using Grout with Django, see [Getting
+started](#getting-started). To get started using Grout with another
+stack, see [Non-Django applications](#non-django-applications). For more
+background on how Grout works, see [Concepts](#concepts).
 
 ## Getting started
 
@@ -83,7 +85,7 @@ Install the Grout library from PyPi using `pip`.
 $ pip install grout
 ```
 
-To use the bleeding-edge version of Grout, install it from GitHub.
+To use the development version of Grout, install it from GitHub.
 
 ```bash
 $ git clone git@github.com:azavea/grout.git
@@ -156,10 +158,11 @@ authentication, see the [DRF docs](http://www.django-rest-framework.org/).
 of a Grout API server designed to be used as a standalone app. It also serves
 as a good example of how to incorporate Grout into a Django project, and
 includes a preconfigured authentication module to boot. If you're
-having trouble installing or configuring Grout in your project, Grout Server
+having trouble installing or configuring Grout in your project, [Grout
+Server](https://github.com/azavea/grout-server)
 is a good resource for troubleshooting.
 
-### Standalone project
+### Non-Django applications
 
 If you're not a Django developer, you can still use Grout as a standalone
 API server using the [Grout Server](https://github.com/azavea/grout-server)
@@ -191,7 +194,7 @@ points to Records because RecordSchemas can change at any moment.
 
 In Grout, RecordSchemas are append-only, meaning that they cannot be deleted.
 Instead, when you want to change the schema of a Record, you create a new
-RecordSchema and update the version attribute.
+RecordSchema and update the `version` attribute.
 
 For a quick example, say that we have a RecordSchema describing data stored on
 a `cat` RecordType. The RecordSchema might look something like this:
@@ -276,48 +279,49 @@ set `version: 2` and `next_version: null` for this updated schema:
       "catDetails": {
         "$ref": "#/definitions/driverPosterDetails"
       },
-    "definitions": {
-      "catDetails": {
-        "type": "object",
-        "title": "Cat Details",
-        "properties": {
-          "Name": {
-            "type": "string",
-            "fieldType": "text",
-            "isSearchable": true,
-            "propertyOrder": 1
-          },
-          "Age": {
-            "type": "integer",
-            "fieldType": "integer",
-            "minimum": 0,
-            "maximum": 100,
-            "isSearchable": true,
-            "propertyOrder": 2
-          },
-          "Date of Birth: {
-            "type": "string",
-            "format": "datetime",
-            "fieldType": "text",
-            "isSearchable": true,
-            "propertyOrder": 3
-          },
-          "Color": {
-            "type": "string",
-            "fieldType": "text",
-            "isSearchable": true,
-            "propertyOrder": 4
-          },
-          "Breed": {
-            "type": "select",
-            "fieldType": "selectlist",
-            "enum": [
-              "Tabby",
-              "Bobtail",
-              "Abyssinian"
-            ],
-            "isSearchable": true,
-            "propertyOrder": 5
+      "definitions": {
+        "catDetails": {
+          "type": "object",
+          "title": "Cat Details",
+          "properties": {
+            "Name": {
+              "type": "string",
+              "fieldType": "text",
+              "isSearchable": true,
+              "propertyOrder": 1
+            },
+            "Age": {
+              "type": "integer",
+              "fieldType": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "isSearchable": true,
+              "propertyOrder": 2
+            },
+            "Date of Birth": {
+              "type": "string",
+              "format": "datetime",
+              "fieldType": "text",
+              "isSearchable": true,
+              "propertyOrder": 3
+            },
+            "Color": {
+              "type": "string",
+              "fieldType": "text",
+              "isSearchable": true,
+              "propertyOrder": 4
+            },
+            "Breed": {
+              "type": "select",
+              "fieldType": "selectlist",
+              "enum": [
+                "Tabby",
+                "Bobtail",
+                "Abyssinian"
+              ],
+              "isSearchable": true,
+              "propertyOrder": 5
+            }
           }
         }
       }
@@ -328,6 +332,7 @@ set `version: 2` and `next_version: null` for this updated schema:
 
 In addition, Grout will update the initial schema to set `next_version: 2`:
 
+```
 {
   "version": 1,
   "next_version": 2,
@@ -335,6 +340,7 @@ In addition, Grout will update the initial schema to set `next_version: 2`:
     ...
   }
 }
+```
 
 Now, when a user searches for Records in the `cat` RecordType, Grout can find
 the most recent schema by looking for the RecordSchema where `next_version: null`.
@@ -345,6 +351,8 @@ For a closer look at the Grout data model, see the [`models.py` file in the Grou
 library](https://github.com/azavea/grout/blob/develop/grout/models.py).
 
 ## API documentation
+
+### Request and response formats
 
 Communication with the API generally follows the principles of RESTful API design.
 API paths correspond to resources, `GET` requests are used to retrieve objects, `POST`
@@ -596,8 +604,7 @@ Results fields:
 | `modified` | Timestamp | The date and time when this BoundaryPolygon was last modified. |
 | `data` | Object | Each key in this Object will correspond to one of the `data_fields` in the parent Boundary, and will store the value for that field for this Polygon. |
 | `boundary` | UUID | Unique identifier of the parent Boundary for this BoundaryPolygon. |
-| `bbox` | Array | Minimum bounding box containing this Polygon's geometry, as
-an Array of lat/lon points. This field is optional -- see the `nogeom` parameter above for more details. |
+| `bbox` | Array | Minimum bounding box containing this Polygon's geometry, as an Array of lat/lon points. This field is optional -- see the `nogeom` parameter above for more details. |
 | `geometry` | GeoJSON | GeoJSON representation of this Polygon. This field is optional -- see the `nogeom` parameter above for more details. |
 
 ## Developing
