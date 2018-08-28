@@ -1,9 +1,8 @@
 # Changelog
 
-## 2.0dev
+## develop
 
-Changes we're making en route to version 2.0. When we cut a release, this
-section will form the changelog for v2.0.
+## 2.0
 
 - Added a validation step to `Record.clean()` method checking whether the `data`
   field of an incoming Record matches its schema [#11](https://github.com/azavea/grout/pull/11)
