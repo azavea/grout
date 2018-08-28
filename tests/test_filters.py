@@ -8,13 +8,15 @@ from django.contrib.gis.geos import Polygon, MultiPolygon
 
 from rest_framework import viewsets
 from rest_framework.request import Request
-from rest_framework.test import APIRequestFactory
+from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework.exceptions import ParseError
 
 from grout.filters import (BoundaryPolygonFilter, JsonBFilterBackend, RecordFilter,
                            RecordTypeFilter)
 from grout.models import Boundary, BoundaryPolygon, Record, RecordSchema, RecordType
 from grout.views import BoundaryPolygonViewSet, RecordViewSet
+
+from tests.api_test_case import GroutAPITestCase
 
 
 class JsonBFilterViewSet(viewsets.ModelViewSet):
@@ -26,10 +28,12 @@ class JsonBFilterViewSet(viewsets.ModelViewSet):
     )
 
 
-class JsonBFilterBackendTestCase(TestCase):
+class JsonBFilterBackendTestCase(GroutAPITestCase):
     """ Test serializer field for JsonB """
 
     def setUp(self):
+        super(JsonBFilterBackendTestCase, self).setUp()
+
         self.filter_backend = JsonBFilterBackend()
         self.viewset = JsonBFilterViewSet()
         self.factory = APIRequestFactory()
@@ -44,16 +48,23 @@ class JsonBFilterBackendTestCase(TestCase):
             "description": "An item",
             "type": "object",
             "properties": {
-                "id": {
-                    "description": "The unique identifier for a product",
-                    "type": "integer"
-                },
-                "name": {
-                    "description": "Name of the product",
-                    "type": "string"
+                "details": {
+                    "type": "object",
+                    "title": "Details",
+                    "properties": {
+                        "id": {
+                            "description": "The unique identifier for a product",
+                            "type": "integer"
+                        },
+                        "name": {
+                            "description": "Name of the product",
+                            "type": "string"
+                        }
+                    },
+                    "required": ["id", "name"]
                 }
             },
-            "required": ["id", "name"]
+            "required": ["details"]
         }
         id_schema = {
             "$schema": "http://json-schema.org/draft-04/schema#",
@@ -74,6 +85,19 @@ class JsonBFilterBackendTestCase(TestCase):
         schema2 = RecordSchema.objects.create(record_type=self.item_type,
                                               version=1,
                                               schema=item_schema)
+        # Create a Record with the item schema.
+        self.item_record = Record.objects.create(
+            schema=schema2,
+            occurred_from=timezone.now(),
+            occurred_to=timezone.now(),
+            geom='POINT(0 0)',
+            data={
+                'details': {
+                    'id': 1,
+                    'name': 'test record'
+                }
+            }
+        )
 
     def test_valid_jcontains_filter(self):
         """ Test filtering on jsonb keys """
@@ -82,11 +106,60 @@ class JsonBFilterBackendTestCase(TestCase):
         self.assertEqual(len(queryset), 1)
         self.assertEqual(queryset[0].record_type, self.id_type)
 
+    def test_valid_filter_view(self):
+        """
+        Test issuing a valid JSONB filter through the REST API returns matched
+        records.
+        """
+        view = RecordViewSet.as_view({'get': 'list'})
 
-class RecordQueryTestCase(TestCase):
+        jsonb_query = {
+            'details': {
+                'name': {
+                    '_rule_type': 'containment',
+                    'contains': ['test record']
+                }
+            }
+        }
+
+        contains_req = self.factory.get('/foo/', {'jsonb': json.dumps(jsonb_query)})
+        contained_record_count = len([self.item_record])
+        force_authenticate(contains_req, self.user)
+        contains_res = view(contains_req).render()
+        self.assertEqual(json.loads(contains_res.content.decode('utf-8')).get('count'),
+                         contained_record_count,
+                         contains_res.content)
+
+    def test_filter_with_no_matches_view(self):
+        """
+        Test issuing a valid JSONB filter through the REST API returns no matches
+        when the filter doesn't match any Records.
+        """
+        view = RecordViewSet.as_view({'get': 'list'})
+
+        jsonb_query = {
+            'details': {
+                'name': {
+                    '_rule_type': 'containment',
+                    'contains': ['ladidadidah']
+                }
+            }
+        }
+
+        contains_req = self.factory.get('/foo/', {'jsonb': json.dumps(jsonb_query)})
+        force_authenticate(contains_req, self.user)
+        contains_res = view(contains_req).render()
+        self.assertEqual(json.loads(contains_res.content.decode('utf-8')).get('count'),
+                         0,
+                         contains_res.content)
+
+
+class RecordQueryTestCase(GroutAPITestCase):
     """ Test Record queries """
 
     def setUp(self):
+        super(RecordQueryTestCase, self).setUp()
+
         self.filter_backend = RecordFilter()
         self.viewset = RecordViewSet()
         self.factory = APIRequestFactory()
@@ -133,6 +206,25 @@ class RecordQueryTestCase(TestCase):
             schema=self.item_schema,
             data={}
         )
+
+        # Create Records for a nongeospatial RecordType.
+        self.nongeospatial_record_type = RecordType.objects.create(
+            label='nongeospatial',
+            plural_label='nongeospatials',
+            geometry_type='none',
+        )
+        self.nongeospatial_schema = RecordSchema.objects.create(
+            record_type=self.nongeospatial_record_type,
+            version=1,
+            schema={}
+        )
+        self.nongeospatial_record = Record.objects.create(
+            schema=self.nongeospatial_schema,
+            occurred_from=timezone.now(),
+            occurred_to=timezone.now(),
+            data={}
+        )
+
         self.boundary = Boundary.objects.create(label='Parent for polygons')
 
     def test_record_type_filter(self):
@@ -163,16 +255,21 @@ class RecordQueryTestCase(TestCase):
             geom=MultiPolygon(Polygon(((1, 1), (2, 1), (2, 2), (1, 2), (1, 1))))
         )
         # Test a geometry that contains the records
+        contained_record_count = len([self.id_record_1, self.id_record_2,
+                                      self.item_record_1, self.item_record_2])
         queryset = self.filter_backend.filter_polygon_id(self.queryset, 'geom', contains0_0.pk)
-        self.assertEqual(queryset.count(), 4)
+        self.assertEqual(queryset.count(), contained_record_count)
 
         # Test a geometry that does not contain any of the records
         queryset = self.filter_backend.filter_polygon_id(self.queryset, 'geom', no_contains0_0.pk)
         self.assertEqual(queryset.count(), 0)
 
-        # Test leaving out an ID
+        # Test leaving out an ID (this should include nongeospatial records, too)
+        full_record_count = len([self.id_record_1, self.id_record_2,
+                                 self.item_record_1, self.item_record_2,
+                                 self.nongeospatial_record])
         queryset = self.filter_backend.filter_polygon_id(self.queryset, 'geom', None)
-        self.assertEqual(queryset.count(), 4)
+        self.assertEqual(queryset.count(), full_record_count)
 
     def test_valid_polygon_fiter(self):
         """Test filtering by an arbitrary valid GeoJSON polygon."""
@@ -191,6 +288,37 @@ class RecordQueryTestCase(TestCase):
         })
         queryset = self.filter_backend.filter_polygon(self.queryset, 'geom', no_contains0_0)
         self.assertEqual(queryset.count(), 0)
+
+    def test_geom_intersects_query_param(self):
+        """Test that the geom_intersects query param aliases to the polygon filter."""
+        view = RecordViewSet.as_view({'get': 'list'})
+
+        # Test a geometry that contains the records.
+        contains0_0 = json.dumps({
+            'type': 'Polygon',
+            'coordinates': [[[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]]]
+        })
+        contained_record_count = len([self.id_record_1, self.id_record_2,
+                                      self.item_record_1, self.item_record_2])
+
+        contains_req = self.factory.get('/foo/', {'geom_intersects': contains0_0})
+        force_authenticate(contains_req, self.user)
+        contains_res = view(contains_req).render()
+        self.assertEqual(json.loads(contains_res.content.decode('utf-8')).get('count'),
+                         contained_record_count,
+                         contains_res.content)
+
+        # Test a geometry that does not contain the records.
+        no_contains0_0 = json.dumps({
+            'type': 'Polygon',
+            'coordinates': [[[1, 1], [1, 2], [2, 2], [2, 1], [1, 1]]]
+        })
+        no_contains_req = self.factory.get('/foo/', {'geom_intersects': no_contains0_0})
+        force_authenticate(no_contains_req, self.user)
+        no_contains_res = view(no_contains_req).render()
+        self.assertEqual(json.loads(no_contains_res.content.decode('utf-8')).get('count'),
+                         0,
+                         no_contains_res.content)
 
     def test_polygon_filter_parse_error(self):
         """Test that filtering by a malformed GeoJSON polygon raises an error."""

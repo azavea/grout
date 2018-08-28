@@ -15,7 +15,7 @@ router.register('recordschemas', views.RecordSchemaViewSet)
 router.register('recordtypes', views.RecordTypeViewSet)
 
 urlpatterns = [
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', admin.site.urls),
     url(r'^api/', include(router.urls)),
 ]
 

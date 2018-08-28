@@ -21,15 +21,16 @@ Run tests.
 Options:
     -h --help       Display this help text
     git             Check git commit titles
-    app [VERSIONS]  Run tests for the app, optionally limited to Python/Django VERSIONS
+    config          Test sample config files
+    app [VERSION]  Run tests for the app, optionally limited to Python VERSION
     <none>          Run all tests
 
 Versions:
-    When running tests for the app, you can limit the Python/Django versions you'd like
+    When running tests for the app, you can limit the Python versions you'd like
     to test in order to speed up test execution. For example, the following command will only
-    run tests for Python 3.4 and Django 1.11:
+    run tests for Python 3.4:
 
-        ./scripts/test app py34-django111
+        ./scripts/test app py34
 
     To view available versions, see the envlist in the tox.ini file at the root of
     this repo.
@@ -45,10 +46,14 @@ function app_tests() {
     if [ -z "$1" ]
     then
         # No arguments -- default to running all tests
-        docker-compose run --rm test tox
+        docker-compose run --rm py27
+        docker-compose run --rm py34
+        docker-compose run --rm py35
+        docker-compose run --rm py36
+        docker-compose run --rm py37
     else
         # Run tests for the environment that the user has passed in
-        docker-compose run --rm test tox -e "$1"
+        docker-compose run --rm "$1"
     fi
 
     # Stop the database service so that containers aren't lying around
@@ -75,12 +80,31 @@ function git_tests() {
     fi
 }
 
+function config_tests() {
+    # Make sure that the makemigrations command can run using the sample settings file.
+    echo "Making sure that the sample settings file is up to date..."
+    echo "-------------------------------------------------------------------"
+    if [ $(/bin/bash "${DIR}/django-admin" > /dev/null 2>&1 &&\
+        echo $? || echo 1) -eq 0 ]
+    then
+        echo "PASSED: Sample settings file working properly."
+    else
+        echo "FAILED: Sample settings file raised an error:"
+        echo
+        /bin/bash "${DIR}/django-admin"
+        # The line above should exit 1, but provide a default just in case.
+        exit 1
+    fi
+}
+
 function all_tests() {
     echo "Running all tests..."
     echo "-------------------------------------------------------------------"
     app_tests
     echo "-------------------------------------------------------------------"
     git_tests
+    echo "-------------------------------------------------------------------"
+    config_tests
     echo "-------------------------------------------------------------------"
     echo "PASSED: All tests passed."
 }
@@ -94,8 +118,9 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
         case "${1:-}" in
             -h|--help) usage ;;
             git)       git_tests ;;
+            config)    config_tests ;;
             app)       shift 1 && app_tests "$@" ;;
-            *)         usage ;;
+            *)         usage && exit 1;;
         esac
     fi
 fi

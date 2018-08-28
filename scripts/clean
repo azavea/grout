@@ -24,7 +24,7 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
     else
         # Remove any extra virtualenvs lying around
         echo "Removing cached virtualenvs ..."
-        docker-compose run --rm --no-deps test rm -Rf /opt/grout/.tox/
+        docker-compose run --rm --no-deps py37 rm -Rf /opt/grout/.tox/
         echo "Cached virtualenvs removed!"
 
         # Stop containers and shut down the network

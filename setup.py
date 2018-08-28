@@ -9,7 +9,7 @@ def readme():
 
 setup(
     name='grout',
-    version='1.0.0',
+    version='2.0.0',
     author='Azavea, Inc.',
     author_email='info@azavea.com',
     description='A flexible schema framework for geospatial data.',
@@ -21,7 +21,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
     install_requires=[
-        'Django ~=1.11',
+        'Django >=1.11, <=2.1',
         'djangorestframework >=3.8.0',
         'djangorestframework-gis >=0.8.1',
         'django-filter >=1.1.0,<2.0.0',
@@ -29,7 +29,6 @@ setup(
         'jsonschema >=2.4.0',
         'psycopg2-binary >=2.6',
         'python-dateutil >=2.4.2',
-        'djsonb >= 0.2.3',
         'PyYAML >=3.11',
         'pytz >=2015.7',
         'requests >=2.8.1',
@@ -54,6 +53,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Framework :: Django',
         'Framework :: Django :: 1.8',
         'Framework :: Django :: 1.11',

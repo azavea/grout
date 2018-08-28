@@ -41,7 +41,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='recordschema',
             name='record_type',
-            field=models.ForeignKey(related_name='schemas', to='grout.RecordType'),
+            field=models.ForeignKey(related_name='schemas', to='grout.RecordType', on_delete=models.CASCADE),
         ),
         migrations.AlterUniqueTogether(
             name='recordschema',
