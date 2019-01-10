@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 import re
-import shlex
 
 from django.db.models import Lookup
 from django.contrib.postgres.fields import JSONField
@@ -100,12 +99,23 @@ class FilterTree(object):
 
             # The check on 'pattern' here allows us to apply a pattern filter on top of others
             if 'pattern' in rule:
-                # Don't filter as an exact match on the text entered; match per word.
-                for pattern in shlex.split(rule['pattern']):
-                    if rule['_rule_type'] == 'containment_multiple':
-                        sql_tuple = FilterTree.text_similarity_filter(path, pattern, True)
-                    else:
-                        sql_tuple = FilterTree.text_similarity_filter(path, pattern, False)
+                # Filter word by word individually, but make sure to keep quoted words together
+                # Regex to match quoted substrings from https://stackoverflow.com/a/5696141:
+                # /"[^"\\]*(?:\\.[^"\\]*)*"/g
+                word_regex =  r'({})'.format(
+                    '|'.join([
+                        # Match groups of words in double quotes (Allowing for escaping)
+                        '\\"[^\\"\\\\]*(?:\\\\.[^\\"\\\\]*)*\\"',
+                        # Match groups of words in single quotes (Allowing for escaping)
+                        '\\\'[^\\\'\\\\]*(?:\\\\.[^\\\'\\\\]*)*\\\'',
+                        # Match all unquoted words individually
+                        '[\S]+'
+                    ])
+                )
+                match_multiple = (rule['_rule_type'] == 'containment_multiple')
+                for pattern in re.findall(word_regex, rule['pattern']):
+                    pattern = pattern.strip('\'"')
+                    sql_tuple = FilterTree.text_similarity_filter(path, pattern, match_multiple)
                     # add to the list of rules generated for this pattern (one per field)
                     patterns.setdefault(pattern, []).append(sql_tuple)
 

@@ -391,3 +391,28 @@ class JsonBFilterTests(TestCase):
         filt3 = {"Object Details":{"Severity":{"pattern":"fat","_rule_type":"containment"}}}
         query3 = JsonBModel.objects.filter(data__jsonb=filt3)
         self.assertEqual(query3.count(), 1)
+
+    def test_tree_unicode(self):
+        filt = {'key': {'_rule_type': 'containment', 'pattern': '✓'}}
+        tree = FilterTree(filt, 'data')
+        # Method should not raise an exception
+        val = tree.sql()
+        self.assertIsNotNone(val)
+
+    def test_tree_text_similarity_filter_unicode(self):
+        # Method should not raise an exception
+        val = FilterTree.text_similarity_filter(['key'], '✓', path_multiple=False)
+        self.assertIsNotNone(val)
+
+    def test_tree_text_similarity_filter_unicode_path_multiple(self):
+        # Method should not raise an exception
+        val = FilterTree.text_similarity_filter(['root', 'key'], '✓', path_multiple=True)
+        self.assertIsNotNone(val)
+
+    def test_unicode_search(self):
+        """Ensure that unicode values can be filtered for successfully."""
+        record = JsonBModel.objects.create(data={"root": {"key": "'Verified ✓'"}})
+
+        filt = {'root': {'key': {'_rule_type': 'containment_multiple', 'pattern': '✓'}}}
+        query = JsonBModel.objects.filter(data__jsonb=filt)
+        self.assertEqual(list(query), [record])
