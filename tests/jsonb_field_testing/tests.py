@@ -440,3 +440,29 @@ class JsonBFilterTests(TestCase):
         filt = {'root': {'✓': {'_rule_type': 'containment_multiple', 'pattern': 'Verified'}}}
         query = JsonBModel.objects.filter(data__jsonb=filt)
         self.assertEqual(list(query), [record])
+
+    def test_split_search_pattern_single_words(self):
+        result = FilterTree.split_search_pattern('hello world')
+        self.assertEqual(result, ['hello', 'world'])
+
+    def test_split_search_pattern_double_quoted_words(self):
+        result = FilterTree.split_search_pattern('"hello world"')
+        self.assertEqual(result, ['hello world'])
+
+    def test_split_search_pattern_single_quoted_words(self):
+        result = FilterTree.split_search_pattern("'hello world'")
+        self.assertEqual(result, ['hello world'])
+
+    def test_split_search_pattern_mixed_words(self):
+        result = FilterTree.split_search_pattern('the "hello world" message')
+        self.assertEqual(result, ['the', 'hello world', 'message'])
+
+    def test_split_search_pattern_unpaired_quote_front(self):
+        result = FilterTree.split_search_pattern('"hello world')
+        # The unpaired quote is trimmed off
+        self.assertEqual(result, ['hello', 'world'])
+
+    def test_split_search_pattern_unpaired_quote_trail(self):
+        result = FilterTree.split_search_pattern('hello world"')
+        # The unpaired quote is trimmed off
+        self.assertEqual(result, ['hello', 'world'])
