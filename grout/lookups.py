@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 import json
 import re
-import shlex
 
 from django.db.models import Lookup
 from django.contrib.postgres.fields import JSONField
@@ -72,6 +72,24 @@ class FilterTree(object):
             rules = rules + self.get_rules(val, current_path + [path])
         return rules
 
+    @staticmethod
+    def split_search_pattern(pattern):
+        # Split pattern word by word, but make sure to keep quoted words together
+        # Regex to match quoted substrings from https://stackoverflow.com/a/5696141
+        word_regex =  r'({})'.format(
+            '|'.join([
+                # Match groups of words in double quotes (Allowing for escaping)
+                r'"[^"\\]*(?:\\.[^"\\]*)*"',
+                # Match groups of words in single quotes (Allowing for escaping)
+                r"'[^'\\]*(?:\\.[^'\\]*)*'",
+                # Match all unquoted words individually
+                '[\S]+'
+            ])
+        )
+        matches = re.findall(word_regex, pattern)
+        # The regex matches the bounding quotes in each result, so we want to trim them off
+        return [match.strip('\'"') for match in matches]
+
     def sql(self):
         """
         Produce output that can be compiled into SQL by Django and psycopg2.
@@ -100,12 +118,9 @@ class FilterTree(object):
 
             # The check on 'pattern' here allows us to apply a pattern filter on top of others
             if 'pattern' in rule:
-                # Don't filter as an exact match on the text entered; match per word.
-                for pattern in shlex.split(rule['pattern']):
-                    if rule['_rule_type'] == 'containment_multiple':
-                        sql_tuple = FilterTree.text_similarity_filter(path, pattern, True)
-                    else:
-                        sql_tuple = FilterTree.text_similarity_filter(path, pattern, False)
+                match_multiple = (rule['_rule_type'] == 'containment_multiple')
+                for pattern in self.split_search_pattern(rule['pattern']):
+                    sql_tuple = FilterTree.text_similarity_filter(path, pattern, match_multiple)
                     # add to the list of rules generated for this pattern (one per field)
                     patterns.setdefault(pattern, []).append(sql_tuple)
 

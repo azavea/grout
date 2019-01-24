@@ -9,7 +9,7 @@ def readme():
 
 setup(
     name='grout',
-    version='2.0.0',
+    version='2.0.1',
     author='Azavea, Inc.',
     author_email='info@azavea.com',
     description='A flexible schema framework for geospatial data.',

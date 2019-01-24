@@ -2,6 +2,10 @@
 
 ## develop
 
+## 2.0.1
+
+- Addressed unhandled exception when filtering records using non-ASCII characters
+
 ## 2.0
 
 - Added a validation step to `Record.clean()` method checking whether the `data`
@@ -50,6 +54,6 @@
 - Removed `weather` and `light` fields from the `Record` data model
   ([#85](https://github.com/azavea/ashlar/pull/85))
 
-## 1.0 
+## 1.0
 
 Initial release of Grout.

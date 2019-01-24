@@ -391,3 +391,78 @@ class JsonBFilterTests(TestCase):
         filt3 = {"Object Details":{"Severity":{"pattern":"fat","_rule_type":"containment"}}}
         query3 = JsonBModel.objects.filter(data__jsonb=filt3)
         self.assertEqual(query3.count(), 1)
+
+    def test_tree_unicode(self):
+        filt = {'key': {'_rule_type': 'containment', 'pattern': '✓'}}
+        tree = FilterTree(filt, 'data')
+        # Method should not raise an exception
+        val = tree.sql()
+        self.assertIsNotNone(val)
+
+    def test_tree_text_similarity_filter_unicode(self):
+        # Method should not raise an exception
+        val = FilterTree.text_similarity_filter(['key'], '✓', path_multiple=False)
+        self.assertIsNotNone(val)
+
+    def test_tree_text_similarity_filter_unicode_path_multiple(self):
+        # Method should not raise an exception
+        val = FilterTree.text_similarity_filter(['root', 'key'], '✓', path_multiple=True)
+        self.assertIsNotNone(val)
+
+    def test_unicode_search_value(self):
+        """Ensure that unicode values can be filtered for successfully."""
+        record = JsonBModel.objects.create(data={"key": "'Verified ✓'"})
+
+        filt = {'key': {'_rule_type': 'containment', 'pattern': '✓'}}
+        query = JsonBModel.objects.filter(data__jsonb=filt)
+        self.assertEqual(list(query), [record])
+
+    def test_unicode_search_value_multiple(self):
+        """Ensure that unicode values can be filtered for successfully."""
+        record = JsonBModel.objects.create(data={"root": {"key": "'Verified ✓'"}})
+
+        filt = {'root': {'key': {'_rule_type': 'containment_multiple', 'pattern': '✓'}}}
+        query = JsonBModel.objects.filter(data__jsonb=filt)
+        self.assertEqual(list(query), [record])
+
+    def test_unicode_search_key(self):
+        """Ensure that unicode keys can be filtered on successfully."""
+        record = JsonBModel.objects.create(data={"root": {"✓": "'Verified'"}})
+
+        filt = {'root': {'✓': {'_rule_type': 'containment', 'pattern': 'Verified'}}}
+        query = JsonBModel.objects.filter(data__jsonb=filt)
+        self.assertEqual(list(query), [record])
+
+    def test_unicode_search_key_multiple(self):
+        """Ensure that unicode keys can be filtered on successfully."""
+        record = JsonBModel.objects.create(data={"root": {"✓": "'Verified'"}})
+
+        filt = {'root': {'✓': {'_rule_type': 'containment_multiple', 'pattern': 'Verified'}}}
+        query = JsonBModel.objects.filter(data__jsonb=filt)
+        self.assertEqual(list(query), [record])
+
+    def test_split_search_pattern_single_words(self):
+        result = FilterTree.split_search_pattern('hello world')
+        self.assertEqual(result, ['hello', 'world'])
+
+    def test_split_search_pattern_double_quoted_words(self):
+        result = FilterTree.split_search_pattern('"hello world"')
+        self.assertEqual(result, ['hello world'])
+
+    def test_split_search_pattern_single_quoted_words(self):
+        result = FilterTree.split_search_pattern("'hello world'")
+        self.assertEqual(result, ['hello world'])
+
+    def test_split_search_pattern_mixed_words(self):
+        result = FilterTree.split_search_pattern('the "hello world" message')
+        self.assertEqual(result, ['the', 'hello world', 'message'])
+
+    def test_split_search_pattern_unpaired_quote_front(self):
+        result = FilterTree.split_search_pattern('"hello world')
+        # The unpaired quote is trimmed off
+        self.assertEqual(result, ['hello', 'world'])
+
+    def test_split_search_pattern_unpaired_quote_trail(self):
+        result = FilterTree.split_search_pattern('hello world"')
+        # The unpaired quote is trimmed off
+        self.assertEqual(result, ['hello', 'world'])
